@@ -1,0 +1,22 @@
+{
+  "name": "gds-direct-lib",
+  "author": {
+    "name": "Artur Klesun",
+    "email": "a.klesuns@dynatech.lv"
+  },
+  "bundleDependencies": false,
+  "dependencies": {
+  },
+  "deprecated": false,
+  "description": "A set of reusable functions for http server setup, request/response format standartization, sql query generation, etc... that are too small for now for a dedicated lib for each of them, but still needed to avoid copying same code to multiple projects",
+  "engines": {
+    "node": ">=10.0"
+  },
+  "license": "ISC",
+  "main": "./src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@gitlab.dyninno.net:1022/node-libraries/gds-direct-lib.git"
+  },
+  "version": "0.0.1"
+}
