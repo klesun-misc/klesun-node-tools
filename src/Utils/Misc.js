@@ -154,7 +154,7 @@ exports.iqJson = async ({url, credentials, functionName, serviceName, params}) =
 			return BadGateway('Could not parse IQ service ' + functionName + ' json response - ' + body);
 		}
 		if (resp.status !== 'OK' || !('result' in resp)) {
-			return BadGateway('Unexpected IQ service response format - ' + body);
+			return BadGateway('Unexpected IQ service response format - ' + body, resp);
 		} else {
 			return Promise.resolve(resp);
 		}
