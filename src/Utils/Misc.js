@@ -1,5 +1,5 @@
 
-const PresistentHttpRq = require('./PersistentHttpRq.js');
+const PersistentHttpRq = require('./PersistentHttpRq.js');
 const BadGateway = require("./Rej").BadGateway;
 const querystring = require('querystring');
 
@@ -133,7 +133,7 @@ exports.timeout = (seconds, promise) => {
  * @return {Promise<{status: 'OK', result: *}>}
  */
 exports.iqJson = async ({url, credentials, functionName, serviceName, params}) =>
-	PresistentHttpRq({
+	PersistentHttpRq({
 		url: url,
 		body: querystring.stringify({
 			credentials: JSON.stringify(credentials),

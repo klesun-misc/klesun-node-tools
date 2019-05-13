@@ -70,6 +70,9 @@ exports.makeSelectQuery = (params) => {
 };
 
 exports.makeInsertQuery = ({table, rows}) => {
+	if (!rows.length) {
+		throw new Error('Can not create INSERT query: supplied rows are empty');
+	}
 	let $colNames = Object.keys(rows[0]);
 	let $dataToInsert = [];
 	for (let $i = 0; $i < rows.length; ++$i) {
