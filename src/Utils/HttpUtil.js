@@ -1,6 +1,16 @@
 
 const {getExcData} = require('../Utils/Misc.js');
 
+let getRqBody = req => {
+	let rqBody = req.body;
+	if (Object.keys(rqBody).length === 0) {
+		let querystring = require('querystring');
+		let queryStr = req.url.split('?')[1] || '';
+		rqBody = querystring.parse(queryStr);
+	}
+	return rqBody;
+};
+
 /**
  * this function maps HTTP request to an action that returns promise of a json data
  *
@@ -8,13 +18,8 @@ const {getExcData} = require('../Utils/Misc.js');
  * @return {function} - the function to pass as second argument to app.post() where app is 'express' lib instance
  */
 let toHandleHttp = (httpAction) => (req, res) => {
-	let rqBody = req.body;
+	let rqBody = getRqBody(req);
 	let rqTakenMs = Date.now();
-	if (Object.keys(rqBody).length === 0) {
-		let querystring = require('querystring');
-		let queryStr = req.url.split('?')[1] || '';
-		rqBody = querystring.parse(queryStr);
-	}
 	return Promise.resolve()
 		.then(() => httpAction({rqBody, routeParams: req.params}))
 		.catch(exc => {
@@ -43,4 +48,5 @@ let toHandleHttp = (httpAction) => (req, res) => {
 		});
 };
 
+exports.getRqBody = getRqBody;
 exports.toHandleHttp = toHandleHttp;
