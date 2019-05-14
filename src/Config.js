@@ -9,6 +9,7 @@ let envConfig = {
 	HOST: env.HOST, // example: '0.0.0.0'
 	HTTP_PORT: env.HTTP_PORT, // example: 3012
 	SOCKET_PORT: env.SOCKET_PORT, // example: 3022
+	RANDOM_KEY: env.RANDOM_KEY,
 };
 
 let fetchDbConfig = (dbUrl) => PersistentHttpRq({
