@@ -10,7 +10,16 @@
  */
 
 let util = require('util');
-let {safe, chunk} = require('../Utils/Misc.js');
+let {chunk} = require('../Utils/Misc.js');
+
+let safe = getter => {
+	try {
+		return getter();
+	} catch (exc) {
+		//throw exc;
+		return null;
+	}
+};
 
 let php = {};
 
