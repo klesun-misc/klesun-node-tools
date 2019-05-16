@@ -48,7 +48,7 @@ let Migration = ({db, redis, migrations, TABLE_NAME = 'migrations'}) => {
 	};
 
 	let runLocked = async () => {
-		let migrations = migrations.slice();
+		migrations = migrations.slice();
 		let cnt = migrations.length;
 		let runNext = (db) => {
 			let next = migrations.shift();
