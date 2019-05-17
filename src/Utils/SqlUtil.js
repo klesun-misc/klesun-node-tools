@@ -1,25 +1,27 @@
 
+let makeConds = (dataAnds) => {
+	let placedValues = [];
+	let textAnds = [];
+	for (let tuple of dataAnds) {
+		if (tuple.length === 1) {
+			// custom SQL condition, no placeholder
+			textAnds.push(tuple[0]);
+		} else {
+			let [col, operator, value] = tuple;
+			let escCol = col
+				.split('.')
+				.map(p => '`' + p + '`')
+				.join('.');
+			textAnds.push(escCol + ' ' + operator + ' ?');
+			placedValues.push(value);
+		}
+	}
+	let sql = textAnds.join(' AND ');
+	return {sql, placedValues};
+};
+
 /**
- * @param {{
- *     table: 'cmd_rq_log',
- *     as: 'crl',
- *     join?: [{
- *         table: 'terminal_command_log',
- *         as: 'tcl',
- *         on: [['tcl.cmd_rq_id', '=', 'crl.id']],
- *     }],
- *     where?: [
- *         ['gds', '=', 'apollo'],
- *         ['terminalNumber', '=', '2'],
- *     ],
- *     whereOr?: [
- *         [['rbsSessionId', '=', '12345']],
- *         [['gdsSessionDataMd5', '=', 'abcvsdadadajwnekjn']],
- *     ],
- *     orderBy?: 'id DESC',
- *     skip?: '0',
- *     limit?: '100',
- * }} params
+ * @param {makeSelectQuery_rq} params
  * @return {{sql: string, placedValues: []}} like
  *   SELECT * FROM terminalBuffering
  *   WHERE gds = 'apollo' AND terminalNumber = '2'
@@ -29,44 +31,46 @@
  */
 exports.makeSelectQuery = (params) => {
 	let {
-		table, as, join = [], where = [], whereOr = [],
+		table, as, fields = [], join = [], where = [], whereOr = [],
 		orderBy = null, limit = null, skip = null,
 	} = params;
 
-	let makeConds = ands => ands.map(([col, operator]) => {
-		let escCol = col
-			.split('.')
-			.map(p => '`' + p + '`')
-			.join('.');
-		return escCol + ' ' + operator + ' ?';
-	}).join(' AND ');
+	let makeFields = fieldList => fieldList.length > 0 ? fieldList.join(',') : '*';
 
-	let sql = [
-		`SELECT * FROM ${table}` + (as ? ' AS ' + as : ''),
+	let allPlacedValues = [];
+	let sqlParts = [
+		`SELECT ${makeFields(fields)} FROM ${table}` + (as ? ' AS ' + as : ''),
 		join.length === 0 ? '' : join
-			.map(j => 'JOIN ' + j.table
+			.map(j => ` ${j.type || ''} JOIN ${j.table}`
 				+ (j.as ? ' AS ' + j.as : '')
 				+ ' ON ' + j.on.map(([l, op, r]) =>
 					l + ' ' + op + ' ' + r))
 			.join(''),
 		`WHERE TRUE`,
-		where.length === 0 ? '' :
-			'AND ' + makeConds(where),
-		whereOr.length === 0 ? '' :
-			'AND (' + (whereOr.map(or => makeConds(or)).join(' OR ')) + ')',
-		!orderBy ? '' : `ORDER BY ` + orderBy,
-		!limit ? '' : `LIMIT ` + (+skip ? +skip + ', ' : '') + +limit,
-	].join('\n');
+	];
+	if (where.length > 0) {
+		let {sql, placedValues} = makeConds(where);
+		allPlacedValues.push(...placedValues);
+		sqlParts.push('AND ' + sql);
+	}
+	if (whereOr.length > 0) {
+		let textOrs = [];
+		for (let dataOr of whereOr) {
+			let {sql, placedValues} = makeConds(dataOr);
+			textOrs.push(sql);
+			allPlacedValues.push(...placedValues);
+		}
+		sqlParts.push('AND (' + textOrs.join(' OR ') + ')');
+	}
+	if (orderBy) {
+		sqlParts.push(`ORDER BY ` + orderBy);
+	}
+	if (limit) {
+		sqlParts.push(`LIMIT ` + (+skip ? +skip + ', ' : '') + +limit);
+	}
+	let sql = sqlParts.join('\n');
 
-	let placedValues = [].concat(
-		where
-			.map(([col, op, val]) => val),
-		whereOr.map(or => or
-			.map(([col, op, val]) => val))
-			.reduce((a,b) => a.concat(b), []),
-	);
-
-	return {sql, placedValues};
+	return {sql, placedValues: allPlacedValues};
 };
 
 exports.makeInsertQuery = ({table, rows}) => {
