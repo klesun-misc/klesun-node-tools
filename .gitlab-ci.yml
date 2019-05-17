@@ -1,0 +1,14 @@
+stages:
+- test
+
+before_script:
+  - node --version
+
+run-tests-dev:
+  tags:
+    - dev-w13
+  except:
+    - tags
+    - production
+  script:
+    - node runTests.js
