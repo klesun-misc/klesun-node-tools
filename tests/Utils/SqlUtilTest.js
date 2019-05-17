@@ -18,7 +18,6 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js')
 		            "",
 		            "WHERE TRUE",
 		            "AND `agentId` = ? AND `requestId` = ?",
-		            "",
 		            "ORDER BY id DESC",
 		            "LIMIT 100"
 		        ].join("\n"),
@@ -34,7 +33,7 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js')
 		        ]
 		    },
 		    "output": {
-		        "sql": "SELECT * FROM migrations\n\nWHERE TRUE\nAND `name` = ?\n\n\n",
+		        "sql": "SELECT * FROM migrations\n\nWHERE TRUE\nAND `name` = ?",
 		        "placedValues": ["GRECT/2019.04.17005-create-mentioned-pnrs-table"]
 		    }
 		});
@@ -53,8 +52,6 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js')
 		            "SELECT * FROM terminal_sessions AS ts",
 		            "",
 		            "WHERE TRUE",
-		            "",
-		            "",
 		            "ORDER BY ts.id DESC",
 		            "LIMIT 2000"
 		        ].join("\n"),
@@ -86,10 +83,9 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js')
 			"output": {
 				"sql": [
 					"SELECT * FROM terminal_sessions AS ts",
-					"JOIN mentioned_pnrs AS mp ON mp.sessionId = ts.id",
+					"  JOIN mentioned_pnrs AS mp ON mp.sessionId = ts.id",
 					"WHERE TRUE",
 					"AND `ts`.`agent_id` = ? AND `ts`.`gds` = ? AND `ts`.`id` = ? AND `ts`.`lead_id` = ? AND `mp`.`recordLocator` = ?",
-					"",
 					"ORDER BY ts.id DESC",
 					"LIMIT 2000"
 				].join("\n"),
@@ -109,11 +105,32 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js')
 		            "",
 		            "WHERE TRUE",
 		            "AND `session_id` = ?",
-		            "",
 		            "ORDER BY id DESC",
-		            ""
 		        ].join("\n"),
 		        "placedValues": [773]
+		    }
+		});
+
+		testCases.push({
+			"title": "example with custom SQL condition in where",
+		    "input": {
+		        "table": "terminal_command_log",
+		        "where": [
+					["session_id","=",773],
+					["MAX(id) > 13"],
+					["dt","<","2019-05-17"],
+				],
+		        "orderBy": "id DESC"
+		    },
+		    "output": {
+		        "sql": [
+		            "SELECT * FROM terminal_command_log",
+		            "",
+		            "WHERE TRUE",
+		            "AND `session_id` = ? AND MAX(id) > 13 AND `dt` < ?",
+		            "ORDER BY id DESC",
+		        ].join("\n"),
+		        "placedValues": [773, "2019-05-17"]
 		    }
 		});
 
