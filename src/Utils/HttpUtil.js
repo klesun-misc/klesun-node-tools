@@ -43,7 +43,16 @@ let toHandleHttp = (httpAction) => (req, res) => {
 			exc = exc || 'Empty error ' + exc;
 			res.status(exc.httpStatusCode || 500);
 			res.setHeader('Content-Type', 'application/json');
-			res.send(JSON.stringify({error: (exc.message || exc + '').replace(/^Error: /, '')}));
+			let error;
+			if (exc.message) {
+				// in AbstractClient error message is not string sometimes
+				error = typeof exc.message === 'string' ? exc.message
+					: 'data-message: ' + JSON.stringify(exc.message);
+			} else {
+				error = (exc + '').replace(/^Error: /, '');
+			}
+			let data = (data || {}).passToClient ? data : null;
+			res.send(JSON.stringify({error: error, payload: data}));
 			return Promise.reject(exc);
 		});
 };

@@ -5,6 +5,9 @@
 // (to decide whether or not to write it to Diag, for example)
 
 let toReject = (httpStatusCode, isAlwaysOk = false) => {
+	/**
+	 * @param {{passToClient: boolean, isOk: boolean, anythingElse: *}} data
+	 */
 	let makeExc = (msg, data = undefined) => {
 		let exc;
 		let isOk = isAlwaysOk || (data || {}).isOk;
