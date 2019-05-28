@@ -51,7 +51,7 @@ let toHandleHttp = (httpAction) => (req, res) => {
 			} else {
 				error = (exc + '').replace(/^Error: /, '');
 			}
-			let data = (data || {}).passToClient ? data : null;
+			let data = (exc.data || {}).passToClient ? exc.data : null;
 			res.send(JSON.stringify({error: error, payload: data}));
 			return Promise.reject(exc);
 		});
