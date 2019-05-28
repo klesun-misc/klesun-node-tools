@@ -1,18 +1,18 @@
 {
-  "name": "gds-direct-lib",
+  "name": "klesun-node-tools",
   "author": {
     "name": "Artur Klesun",
-    "email": "a.klesuns@dynatech.lv"
+    "email": "arturklesun@gmail.com"
   },
   "bundleDependencies": false,
   "dependencies": {
   },
   "deprecated": false,
-  "description": "A set of reusable functions for http server setup, request/response format standartization, sql query generation, etc... that are too small for now for a dedicated lib for each of them, but still needed to avoid copying same code to multiple projects",
+  "description": "A set of reusable functions for http server setup, request/response format standardisation, sql query generation, etc... that are too small for now for a dedicated lib for each of them, but still needed to avoid copying same code to multiple projects",
   "engines": {
     "node": ">=10.0"
   },
-  "license": "ISC",
+  "license": "MIT",
   "main": "./src/index.js",
   "repository": {
     "type": "git",
