@@ -140,16 +140,16 @@ class TestCase
 			return this._ok();
 		} else {
 			let fullMsg = 'Failed asserting that actual ' +
-				actual + ' is <= than expected ' + expected +
-				' has the key ' + key + '\n' + msg;
+				actual + ' is <= than expected ' + expected + '\n' + msg;
 			return this._err(fullMsg);
 		}
 	}
 
 	/**
 	 * @abstract
-	 * @return {[function(): string | null]} - array of functions
-	 * that return an error string, or null, if there was no error
+	 * @template T
+	 * @return {[function(): T[], function(T)][]} - array of tuples: first element - data
+	 *  provider function, second - testing function that throws exception on error
 	 */
 	getTestMapping() {
 		throw new Error('Please, redefine abstract getTestMapping() in your Unit Test class');
