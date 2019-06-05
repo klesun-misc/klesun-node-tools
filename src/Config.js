@@ -63,7 +63,7 @@ let getRedisConfig = () => {
 let fetchExternalConfig = () => {
 	const promises = [];
 
-	promises.push(fetchDbConfig());
+	promises.push(getDbConfig());
 	promises.push(getRedisConfig());
 
 	return Promise.all(promises)
