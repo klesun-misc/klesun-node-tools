@@ -30,6 +30,14 @@ let fetchDbConfig = (dbUrl) => PersistentHttpRq({
 	}
 	return dbConfig;
 });
+let whenDbConfig = null;
+let getDbConfig = () => {
+	if (whenDbConfig === null) {
+		const dbUrl = env.CONFIG_LAN + '/db.php?db=' + env.DB_NAME;
+		whenDbConfig = fetchDbConfig(dbUrl);
+	}
+	return whenDbConfig;
+};
 
 let fetchRedisConfig = (redisUrl) => PersistentHttpRq({
 	url: redisUrl,
@@ -43,14 +51,20 @@ let fetchRedisConfig = (redisUrl) => PersistentHttpRq({
 	}
 	return redisConfig;
 });
+let whenRedisConfig = null;
+let getRedisConfig = () => {
+	if (whenRedisConfig === null) {
+		const redisUrl = env.CONFIG_LAN + '/v0/redis/' + env.REDIS_CLUSTER_NAME;
+		whenRedisConfig = fetchRedisConfig(redisUrl);
+	}
+	return whenRedisConfig;
+};
 
 let fetchExternalConfig = () => {
-	const dbUrl = env.CONFIG_LAN + '/db.php?db=' + env.DB_NAME;
-	const redisUrl = env.CONFIG_LAN + '/v0/redis/' + env.REDIS_CLUSTER_NAME;
 	const promises = [];
 
-	promises.push(fetchDbConfig(dbUrl));
-	promises.push(fetchRedisConfig(redisUrl));
+	promises.push(fetchDbConfig());
+	promises.push(getRedisConfig());
 
 	return Promise.all(promises)
 		.then((configs) => Object.assign({}, ...configs));
@@ -66,3 +80,6 @@ exports.getConfig = async () => {
 	});
 	return fetching;
 };
+exports.getEnvConfig = () => envConfig;
+exports.getDbConfig = getDbConfig;
+exports.getRedisConfig = getRedisConfig;
