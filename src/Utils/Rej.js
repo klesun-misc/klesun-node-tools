@@ -45,10 +45,17 @@ exports.BadRequest = toReject(400);
 exports.NotAuthorized = toReject(401);
 exports.Forbidden = toReject(403, isOk);
 exports.NotFound = toReject(404);
+exports.MethodNotAllowed = toReject(405);
+exports.NotAcceptable = toReject(406);
+exports.ProxyAuthenticationRequired = toReject(407);
+exports.RequestTimeout = toReject(408);
 exports.Conflict = toReject(409);
+exports.Gone = toReject(410);
 // unable to process the requested instructions, I'll use it
 // as cannot satisfy in RBS - when GDS returns error and such
 exports.UnprocessableEntity = toReject(422);
+exports.Locked = toReject(423);
+exports.FailedDependency = toReject(424);
 exports.TooEarly = toReject(425);
 exports.TooManyRequests = toReject(429);
 exports.LoginTimeOut = toReject(440);
@@ -58,6 +65,9 @@ exports.InternalServerError = toReject(500);
 exports.NotImplemented = toReject(501);
 exports.BadGateway = toReject(502);
 exports.ServiceUnavailable = toReject(503);
+exports.GatewayTimeout = toReject(504);
+exports.InsufficientStorage = toReject(507);
+exports.NotExtended = toReject(510);
 
 /** handy when you need to filter a value in Promise chain */
 exports.nonEmpty = (msg = '(no description)', reject = null) => (value) => {
