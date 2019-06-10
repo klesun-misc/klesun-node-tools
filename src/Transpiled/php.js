@@ -10,7 +10,7 @@
  */
 
 let util = require('util');
-let {chunk} = require('../Utils/Misc.js');
+let {chunk, escapeRegex} = require('../Utils/Misc.js');
 
 let safe = getter => {
 	try {
@@ -298,7 +298,6 @@ php.strpos = (str, substr) => {
 	let index = str.indexOf(substr);
 	return index > -1 ? index : false;
 };
-let escapeRegex = (str) => str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
 php.str_replace = (search, replace, str) => {
 	str = strval(str);
 	let regSrc = escapeRegex(search);

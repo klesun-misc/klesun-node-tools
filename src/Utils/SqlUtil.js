@@ -1,4 +1,6 @@
 
+let {escapeRegex} = require('./Misc.js');
+
 let makeConds = (dataAnds) => {
 	let placedValues = [];
 	let textAnds = [];
@@ -12,12 +14,48 @@ let makeConds = (dataAnds) => {
 				.split('.')
 				.map(p => '`' + p + '`')
 				.join('.');
-			textAnds.push(escCol + ' ' + operator + ' ?');
-			placedValues.push(value);
+			if (operator.toUpperCase() === 'IN' ||
+				operator.toUpperCase() === 'NOT IN'
+			) {
+				textAnds.push(escCol + ' ' + operator + ' (' + value
+					.map(v => '?').join(', ') + ')');
+				placedValues.push(...value);
+			} else {
+				textAnds.push(escCol + ' ' + operator + ' ?');
+				placedValues.push(value);
+			}
 		}
 	}
 	let sql = textAnds.join(' AND ');
 	return {sql, placedValues};
+};
+
+let normalizeSelectParams = (params) => {
+	let {
+		table, as, fields = [], join = [], where = [], whereOr = [],
+		orderBy = [], limit = null, skip = null,
+	} = params;
+
+	if (whereOr.length === 0) {
+		whereOr = [where];
+	} else {
+		// supposedly you would not use both "whereOr" and "where" at once, but
+		// if you happen to, add the global "where" condition to all "or" condition
+		whereOr = whereOr.map(ands => where.concat(ands));
+	}
+
+	// legacy
+	if (typeof orderBy === 'string') {
+		orderBy = orderBy
+			.split(',')
+			.map(p => p.match(/^(.+?)(\s+ASC|\s+DESC|)\s*$/))
+			.map(([, expr, direction]) => [expr, direction.trim()]);
+	}
+
+	return {
+		table, as, fields, join, whereOr,
+		orderBy, limit, skip,
+	};
 };
 
 /**
@@ -31,9 +69,9 @@ let makeConds = (dataAnds) => {
  */
 exports.makeSelectQuery = (params) => {
 	let {
-		table, as, fields = [], join = [], where = [], whereOr = [],
-		orderBy = null, limit = null, skip = null,
-	} = params;
+		table, as, fields, join, whereOr,
+		orderBy, limit, skip,
+	} = normalizeSelectParams(params);
 
 	let makeFields = fieldList => fieldList.length > 0 ? fieldList.join(',') : '*';
 
@@ -46,24 +84,20 @@ exports.makeSelectQuery = (params) => {
 				+ ' ON ' + j.on.map(([l, op, r]) =>
 					l + ' ' + op + ' ' + r))
 			.join(''),
-		`WHERE TRUE`,
 	];
-	if (where.length > 0) {
-		let {sql, placedValues} = makeConds(where);
-		allPlacedValues.push(...placedValues);
-		sqlParts.push('AND ' + sql);
-	}
-	if (whereOr.length > 0) {
+	if (whereOr.length > 0 && whereOr[0].length > 0) {
 		let textOrs = [];
 		for (let dataOr of whereOr) {
 			let {sql, placedValues} = makeConds(dataOr);
 			textOrs.push(sql);
 			allPlacedValues.push(...placedValues);
 		}
-		sqlParts.push('AND (' + textOrs.join(' OR ') + ')');
+		sqlParts.push('WHERE ' + textOrs.join('\n   OR '));
 	}
-	if (orderBy) {
-		sqlParts.push(`ORDER BY ` + orderBy);
+	if (orderBy.length > 0) {
+		sqlParts.push(`ORDER BY ` + orderBy
+			.map(([expr, direction]) => '`' + expr + '` ' + (direction || ''))
+			.join(', '));
 	}
 	if (limit) {
 		sqlParts.push(`LIMIT ` + (+skip ? +skip + ', ' : '') + +limit);
@@ -134,4 +168,123 @@ exports.makeUpdateQuery = ({table, set, where}) => {
 		.concat(where.map(([col, op, val]) => val));
 
 	return {sql, placedValues};
+};
+
+let isStrLike = (str, pattern) => {
+	let regexStr = '^' + pattern
+		.split('%')
+		.map(escapeRegex)
+		.join('.*') + '$';
+	return new RegExp(regexStr).test(str);
+};
+
+let isValue = (rowValue, value) => {
+	if (value === null || value === undefined) {
+		return rowValue === null || rowValue === undefined;
+	} else {
+		return value == rowValue;
+	}
+};
+
+/**
+ * SQL queries in unit tests, yay!
+ *
+ * @template T
+ * @param {makeSelectQuery_rq} params
+ * @param {T[]} allRows
+ * @return {T[]}
+ */
+exports.selectFromArray = (params, allRows) => {
+	let {
+		table, as, fields, join, whereOr,
+		orderBy, limit, skip,
+	} = normalizeSelectParams(params);
+
+	if (join.length > 0) {
+		let msg = 'Attempted to use JOIN ' + JSON.stringify(join) +
+			' on a collection - not supported yet (and maybe ever)';
+		throw new Error(msg);
+	}
+
+	// note that it does not currently handle custom
+	// expressions or joins anyhow for simplicity sake
+
+	return allRows
+		.filter(row => {
+			if (whereOr.length === 0) {
+				return true;
+			} else {
+				return whereOr.some(ands => ands
+					.every(([field, op, value]) => {
+						if (!(field in row)) {
+							let msg = 'Attempted to filter by field ' + field +
+								' not present in a row - ' + JSON.stringify(row);
+							throw new Error(msg);
+						}
+						let rowValue = row[field];
+						if (op === '=') {
+							return rowValue == value;
+						} else if (op === '>=') {
+							return rowValue >= value;
+						} else if (op === '>') {
+							return rowValue > value;
+						} else if (op === '<=') {
+							return rowValue <= value;
+						} else if (op === '<') {
+							return rowValue < value;
+						} else if (op.toUpperCase() === 'IS') {
+							return isValue(rowValue, value);
+						} else if (op.toUpperCase() === 'IS NOT') {
+							return !isValue(rowValue, value);
+						} else if (op.toUpperCase() === 'LIKE') {
+							return isStrLike(rowValue, value);
+						} else if (op.toUpperCase() === 'NOT LIKE') {
+							return !isStrLike(rowValue, value);
+						} else if (op.toUpperCase() === 'IN') {
+							return value.includes(rowValue);
+						} else if (op.toUpperCase() === 'NOT IN') {
+							return !value.includes(rowValue);
+						} else {
+							let msg = 'Unsupported operator ' + op;
+							throw new Error(msg);
+						}
+					}));
+			}
+		})
+		.sort((aRow, bRow) => {
+			for (let [field, direction = 'ASC'] of orderBy) {
+				if (!(field in aRow) || !(field in bRow)) {
+					let msg = 'Attempted to order by field ' + field +
+						' not present in a row - ' + JSON.stringify({aRow, bRow});
+					throw new Error(msg);
+				}
+				let aVal = aRow[field];
+				let bVal = bRow[field];
+				let result = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+				if (result) {
+					if (direction === 'DESC') {
+						result = -result;
+					}
+					return result;
+				}
+			}
+			return 0;
+		})
+		.slice(skip || 0, limit ? (skip || 0) + limit : undefined)
+		.map(row => {
+			if (fields.length === 0) {
+				return row;
+			} else {
+				let result = {};
+				for (let field of fields) {
+					if (!(field in row)) {
+						let msg = 'Attempted to return field ' + field +
+							' not present in a row - ' + JSON.stringify(row);
+						throw new Error(msg);
+					}
+					result[field] = row[field];
+				}
+				return result;
+			}
+		});
 };

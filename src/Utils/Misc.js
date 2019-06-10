@@ -17,6 +17,8 @@ exports.chunk = (arr, size) => {
 	return chunks;
 };
 
+exports.escapeRegex = (str) => str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+
 /**
  * keep in mind when using this, that it is not very optimal for large sets of data, since it tries
  * to JSON.stringify _every value_ to check if it's inline representation is shorter than inlineLimit
