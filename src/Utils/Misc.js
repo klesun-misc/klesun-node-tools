@@ -20,6 +20,26 @@ exports.chunk = (arr, size) => {
 exports.escapeRegex = (str) => str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
 
 /**
+ * @return RegExp
+ *
+ * to split complex regex into multiple lines, usage:
+ * let regex = mkReg([
+ *		/^>\$EX NAME\s+/,
+ *		/(?<lastName>[A-Z][^\/]*)\//,
+ *		/(?<firstName>[A-Z].*?)\s+/,
+ *		/TX1\s+/,
+ *		'(', mkReg([
+ *			/(?<taxCurrency1>[A-Z]{3})\s+/,
+ *			/(?<taxAmount1>\d*\.?\d+)\s+/,
+ *			/(?<taxCode1>[A-Z0-9]{2})/,
+ *		]), ')?\\s+',
+ *	])
+ */
+exports.mkReg = (parts) => new RegExp(parts
+	.map(r => typeof r === 'string' ? r : r.source)
+	.join(''));
+
+/**
  * keep in mind when using this, that it is not very optimal for large sets of data, since it tries
  * to JSON.stringify _every value_ to check if it's inline representation is shorter than inlineLimit
  * this can be fixed, given the time
