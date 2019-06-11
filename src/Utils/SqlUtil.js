@@ -1,6 +1,11 @@
 
 let {escapeRegex} = require('./Misc.js');
 
+let escCol = col => col
+	.split('.')
+	.map(p => '`' + p + '`')
+	.join('.');
+
 let makeConds = (dataAnds) => {
 	let placedValues = [];
 	let textAnds = [];
@@ -10,18 +15,15 @@ let makeConds = (dataAnds) => {
 			textAnds.push(tuple[0]);
 		} else {
 			let [col, operator, value] = tuple;
-			let escCol = col
-				.split('.')
-				.map(p => '`' + p + '`')
-				.join('.');
+			let escapedCol = escCol(col);;
 			if (operator.toUpperCase() === 'IN' ||
 				operator.toUpperCase() === 'NOT IN'
 			) {
-				textAnds.push(escCol + ' ' + operator + ' (' + value
+				textAnds.push(escapedCol + ' ' + operator + ' (' + value
 					.map(v => '?').join(', ') + ')');
 				placedValues.push(...value);
 			} else {
-				textAnds.push(escCol + ' ' + operator + ' ?');
+				textAnds.push(escapedCol + ' ' + operator + ' ?');
 				placedValues.push(value);
 			}
 		}
@@ -96,7 +98,7 @@ exports.makeSelectQuery = (params) => {
 	}
 	if (orderBy.length > 0) {
 		sqlParts.push(`ORDER BY ` + orderBy
-			.map(([expr, direction]) => '`' + expr + '` ' + (direction || ''))
+			.map(([expr, direction]) => escCol(expr) + ' ' + (direction || ''))
 			.join(', '));
 	}
 	if (limit) {

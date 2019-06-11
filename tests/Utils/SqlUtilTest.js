@@ -49,7 +49,7 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 				"sql": [
 					"SELECT * FROM terminal_sessions AS ts",
 					"",
-					"ORDER BY `ts.id` DESC",
+					"ORDER BY `ts`.`id` DESC",
 					"LIMIT 2000"
 				].join("\n"),
 				"placedValues": []
@@ -82,7 +82,7 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 					"SELECT * FROM terminal_sessions AS ts",
 					"  JOIN mentioned_pnrs AS mp ON mp.sessionId = ts.id",
 					"WHERE `ts`.`agent_id` = ? AND `ts`.`gds` = ? AND `ts`.`id` = ? AND `ts`.`lead_id` = ? AND `mp`.`recordLocator` = ?",
-					"ORDER BY `ts.id` DESC",
+					"ORDER BY `ts`.`id` DESC",
 					"LIMIT 2000"
 				].join("\n"),
 				"placedValues": ["6206", "sabre", "15102", "18544584", "TXH2HK"]
