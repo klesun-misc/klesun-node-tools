@@ -17,7 +17,10 @@ interface makeSelectQuery_rq {
         [['rbsSessionId', '=', '12345']],
         [['gdsSessionDataMd5', '=', 'abcvsdadadajwnekjn']]
     ],
-    orderBy?: 'id DESC',
+    orderBy?: [
+        ['duration', 'ASC'],
+        ['id', 'DESC']
+    ],
     skip?: '0',
     limit?: '100',
 }
