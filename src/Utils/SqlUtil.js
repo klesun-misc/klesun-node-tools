@@ -226,6 +226,8 @@ exports.selectFromArray = (params, allRows) => {
 						let rowValue = row[field];
 						if (op === '=') {
 							return rowValue == value;
+						} else if (op === '!=') {
+							return rowValue != value;
 						} else if (op === '>=') {
 							return rowValue >= value;
 						} else if (op === '>') {
