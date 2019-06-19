@@ -2,6 +2,7 @@
 const PersistentHttpRq = require('./PersistentHttpRq.js');
 const BadGateway = require("./Rej").BadGateway;
 const querystring = require('querystring');
+const Lang = require('../Lang.js');
 
 exports.hrtimeToDecimal = (hrtime) => {
 	let [seconds, nanos] = hrtime;
@@ -120,23 +121,9 @@ exports.getExcData = (exc, moreData = null) => {
 };
 
 /**
- * @param {Promise[]} promises
- * wait till all promises are resolved or rejected, then return {resolved: [...], rejected: []}
+ * @deprecated - use from the Lang.js module instead
  */
-exports.allWrap = promises => new Promise((resolve) => {
-	let resolved = [];
-	let rejected = [];
-	let checkResolved = () => {
-		if (resolved.length + rejected.length === promises.length) {
-			resolve({resolved, rejected});
-		}
-	};
-	checkResolved();
-	promises.forEach(p => p
-		.then(result => resolved.push(result))
-		.catch(exc => rejected.push(exc))
-		.finally(checkResolved));
-});
+exports.allWrap = Lang.allWrap;
 
 exports.timeout = (seconds, promise) => {
 	return Promise.race([
