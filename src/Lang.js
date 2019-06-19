@@ -8,17 +8,18 @@
 
 /**
  * @template T
- * @param {T} defaultValue
+ * @param {function(Error): T} defaultValueFunc
  * @param {{httpStatusCode}[]} allowedKinds - Rej.* http status codes
  * @return {function(Error): Promise<T>} - resolve if exc was created with Rej.* and it's
  *           status is in allowedStatuses, otherwise reject with original exc
- * supposed to be used with promise.catch(coverExc(null, [Rej.NotFound])) to catch particular kinds of exceptions
+ * supposed to be used with promise.catch(coverExc([Rej.NotFound], () => null)) to catch particular kinds of exceptions
  */
-exports.coverExc = (defaultValue, allowedKinds) => {
+exports.coverExc = (allowedKinds, defaultValueFunc) => {
 	return (exc) => {
 		let allowedCodes = allowedKinds.map(r => r.httpStatusCode);
 		if (exc && allowedCodes.includes(exc.httpStatusCode)) {
-			return Promise.resolve(defaultValue);
+			return Promise.resolve()
+				.then(() => defaultValueFunc(exc));
 		} else {
 			return Promise.reject(exc);
 		}
