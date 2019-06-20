@@ -2,7 +2,7 @@
 let http = require('http');
 let https = require('https');
 let url = require('url');
-let {BadGateway} = require('../Utils/Rej.js');
+let {BadRequest, BadGateway} = require('../Utils/Rej.js');
 
 let agentParams = {
 	keepAlive: true,
@@ -13,26 +13,41 @@ let agentParams = {
 let httpsAgent = new https.Agent(agentParams);
 let httpAgent = new http.Agent(agentParams);
 
+let normalizeParams = (params) => {
+	if (!params.url) {
+		return BadRequest('url parameter is mandatory');
+	}
+	let parsedUrl = url.parse(params.url);
+	if (!parsedUrl.protocol) {
+		return BadRequest('Invalid url, no protocol - ' + params.url);
+	}
+	if (!parsedUrl.host) {
+		return BadRequest('Invalid url, no host - ' + params.url);
+	}
+	let request = parsedUrl.protocol.startsWith('https') ? https.request : http.request;
+	let requestAgent = params.dropConnection ? undefined :
+		parsedUrl.protocol.startsWith('https') ? httpsAgent : httpAgent;
+	let rqParams = {
+		host: parsedUrl.hostname,
+		port: parsedUrl.port || undefined,
+		path: parsedUrl.path,
+		headers: params.headers,
+		method: params.method || 'POST',
+		body: params.body || undefined,
+		agent: requestAgent,
+	};
+	return {request, rqParams, parsedUrl};
+};
+
 /**
  * a wrapper around http.request that preserves connection for continuous calls
  * Travelport response takes 0.17 seconds instead of 0.7 from Europe when you preserve the connection
  * it also returns a promise
  */
 let PersistentHttpRq = (params) => {
-	return new Promise((resolve, reject) => {
-		let parsedUrl = url.parse(params.url);
-		let request = parsedUrl.protocol.startsWith('https') ? https.request : http.request;
-		let requestAgent = params.dropConnection ? undefined :
-			parsedUrl.protocol.startsWith('https') ? httpsAgent : httpAgent;
-		let req = request({
-			host: parsedUrl.hostname,
-			port: parsedUrl.port || undefined,
-			path: parsedUrl.path,
-			headers: params.headers,
-			method: params.method || 'POST',
-			body: params.body || undefined,
-			agent: requestAgent,
-		}, (res) => {
+	return new Promise(async (resolve, reject) => {
+		let {request, rqParams, parsedUrl} = await normalizeParams(params);
+		let req = request(rqParams, (res) => {
 			let responseBody = '';
 			res.setEncoding('utf8');
 			res.on('data', (chunk) => responseBody += chunk);
