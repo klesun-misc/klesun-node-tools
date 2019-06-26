@@ -1,3 +1,4 @@
+const Misc = require("../Utils/Misc");
 
 const {getConfig} = require('../Config.js');
 const { resolve } = require('path');
@@ -23,9 +24,11 @@ let getFiles = async function* (dir) {
  *         '/home/vasja/gits/grect/tests/backend/Transpiled/Lib/TestCase.js',
  *         '/home/vasja/gits/grect/tests/backend/Transpiled/php.js',
  *     ],
+ *     maxMsPerTest: 10000,
  * }} params
  */
 let RunTests = async (params) => {
+	let maxMsPerTest = params.maxMsPerTest || 10 * 1000;
 	let config = await getConfig();
 	config.external_service = {};
 	config.RBS_PASSWORD = null;
@@ -54,7 +57,7 @@ let RunTests = async (params) => {
 			let testInst = new testCls();
 			let tests = await testInst.getTests();
 			for (let test of tests) {
-				let error = await test();
+				let error = await Misc.timeout(maxMsPerTest / 1000, test());
 				if (error) {
 					errors.push(error);
 					if (args.includes('debug')) {
