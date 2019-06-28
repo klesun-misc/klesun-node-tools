@@ -157,6 +157,27 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 		return testCases.map(c => [c]);
 	}
 
+	provide_makeDeleteQuery() {
+		let testCases = [];
+
+		testCases.push({
+			"input": {
+				"table": "cmd_rs_log",
+				"where": [["responseTimestamp", "<", 235847561]],
+			},
+			"output": {
+				"sql": [
+					"DELETE FROM cmd_rs_log",
+					"WHERE TRUE",
+					"AND `responseTimestamp` < ?",
+				].join("\n"),
+				"placedValues": [235847561]
+			}
+		});
+
+		return testCases.map(c => [c]);
+	}
+
 	provide_selectFromArray() {
 		let testCases = [];
 
@@ -259,6 +280,11 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 		this.assertArrayElementsSubset(output, actual);
 	}
 
+	test_makeDeleteQuery({input, output}) {
+		let actual = SqlUtil.makeDeleteQuery(input);
+		this.assertArrayElementsSubset(output, actual);
+	}
+
 	test_selectFromArray({input, output}) {
 		let actual = SqlUtil.selectFromArray(input.params, input.allRows);
 		this.assertArrayElementsSubset(output, actual);
@@ -267,6 +293,7 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 	getTestMapping() {
 		return [
 			[this.provide_makeSelectQuery, this.test_makeSelectQuery],
+			[this.provide_makeDeleteQuery, this.test_makeDeleteQuery],
 			[this.provide_selectFromArray, this.test_selectFromArray],
 		];
 	}

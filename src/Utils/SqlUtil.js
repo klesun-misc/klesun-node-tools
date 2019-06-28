@@ -172,6 +172,21 @@ exports.makeUpdateQuery = ({table, set, where}) => {
 	return {sql, placedValues};
 };
 
+exports.makeDeleteQuery = ({table, where = []}) => {
+	let makeConds = ands => ands.map(([col, operator]) =>
+		'`' + col + '` ' + operator + ' ?').join(' AND ');
+	let sql = [
+		`DELETE FROM ${table}`,
+		`WHERE TRUE`,
+		where.length === 0 ? '' :
+			'AND ' + makeConds(where),
+	].join('\n');
+
+	let placedValues = where.map(([col, op, val]) => val);
+
+	return {sql, placedValues};
+};
+
 let isStrLike = (str, pattern) => {
 	let regexStr = '^' + pattern
 		.split('%')
