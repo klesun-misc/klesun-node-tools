@@ -35,21 +35,43 @@ php.STR_PAD_LEFT = 0;
 php.STR_PAD_RIGHT = 1;
 php.PREG_PATTERN_ORDER = 1;
 php.PREG_SET_ORDER = 2;
+php.PREG_SPLIT_NO_EMPTY = 1;
+php.PREG_SPLIT_DELIM_CAPTURE = 2;
+php.PREG_SPLIT_OFFSET_CAPTURE = 2;
 
-php.empty = empty;
-php.get_class = (value) => value ? (value.constructor || {}).name || null : null;
-php.is_null = (value) => value === null || value === undefined;
-php.is_string = (value) => typeof value === 'string';
-php.is_callable = (func) => typeof func === 'function';
-php.intval = (value) => +value;
-php.boolval = (value) => empty(value) ? true : false;
-php.abs = (value) => Math.abs(value);
-php.isset = (value) => value !== null && value !== undefined;
-php.is_array = val => Array.isArray(val) || isPlainObject(val);
-php.is_integer = str => {
+php.PHP_EOL = '\n';
+
+/**
+ * separating these simple functions from the rest, because when type
+ * analyzer tries to resolve array_map by array_map, it goes crazy
+ */
+let mapable = {};
+
+mapable.empty = empty;
+mapable.get_class = (value) => value ? (value.constructor || {}).name || null : null;
+mapable.is_null = (value) => value === null || value === undefined;
+mapable.is_string = (value) => typeof value === 'string';
+mapable.is_callable = (func) => typeof func === 'function';
+mapable.intval = (value) => +value;
+mapable.boolval = (value) => empty(value) ? true : false;
+mapable.abs = (value) => Math.abs(value);
+mapable.isset = (value) => value !== null && value !== undefined;
+mapable.is_array = val => Array.isArray(val) || isPlainObject(val);
+mapable.is_integer = str => {
 	let n = Math.floor(Number(str));
 	return n !== Infinity && String(n) === str;
 };
+// '123' - true
+// '123.213' - true
+// '09' - true
+// 'asdf' - false
+mapable.is_numeric = str => {
+	str = strval(str);
+	return (+str + '').replace(/^0*/, '') === str.replace(/^0*/, '');
+};
+mapable.floor = (num) => Math.floor(num);
+mapable.round = (num) => Math.round(num);
+
 // partial implementation
 let equals = (a, b, strict) => {
 	let occurrences = new Set();
@@ -81,16 +103,6 @@ let equals = (a, b, strict) => {
 	return equalsImpl(a, b);
 };
 php.equals = equals;
-// '123' - true
-// '123.213' - true
-// '09' - true
-// 'asdf' - false
-php.is_numeric = str => {
-	str = strval(str);
-	return (+str + '').replace(/^0*/, '') === str.replace(/^0*/, '');
-};
-php.floor = (num) => Math.floor(num);
-php.round = (num) => Math.round(num);
 php.max = (...args) => {
 	if (args.length === 1 && Array.isArray(args[0])) {
 		return Math.max(...args[0]);
@@ -133,17 +145,17 @@ let normalizeJsonData = fullData => {
 	return normalizeInternal(fullData);
 };
 
-php.json_encode = (data) => {
+mapable.json_encode = (data) => {
 	data = normalizeJsonData(data);
 	return JSON.stringify(data);
 };
-php.json_decode = (str) => str ? JSON.parse(str) : null;
+mapable.json_decode = (str) => str ? JSON.parse(str) : null;
 
 // --------------------------------------
 //  datetime functions follow
 // --------------------------------------
 
-php.strtotime = (dtStr, nowSec) => {
+mapable.strtotime = (dtStr, nowSec) => {
 	nowSec = +nowSec;
 	let matches;
 	nowSec = nowSec || Math.floor(Date.now() / 1000);
@@ -217,7 +229,7 @@ php.date = (format, epoch) => {
 //  string functions follow
 // ------------------
 
-php.ltrim = (str, chars = ' \n\t') => {
+let ltrim = (str, chars = ' \n\t') => {
 	str = strval(str);
 	let startAt = 0;
 	for (let i = startAt; i <= str.length; ++i) {
@@ -230,7 +242,7 @@ php.ltrim = (str, chars = ' \n\t') => {
 	return str.slice(startAt);
 	//return str.replace(/^\s+/, '');
 };
-php.rtrim = (str, chars = ' \n\t') => {
+let rtrim = (str, chars = ' \n\t') => {
 	str = strval(str);
 	let endAt = str.length;
 	for (let i = endAt; i > 0; --i) {
@@ -243,16 +255,18 @@ php.rtrim = (str, chars = ' \n\t') => {
 	return str.slice(0, endAt);
 	//return str.replace(/\s+$/, '');
 };
-php.trim = (value, chars = ' \n\t') => php.ltrim(php.rtrim(value, chars), chars);
-php.strval = strval;
+mapable.ltrim = ltrim;
+mapable.rtrim = rtrim;
+mapable.trim = (value, chars = ' \n\t') => ltrim(rtrim(value, chars), chars);
+mapable.strval = strval;
 php.strcmp = (a,b) => {
 	a = strval(a);
 	b = strval(b);
 	return a > b ? 1 : a < b ? -1 : 0;
 };
-php.floatval = num => +num;
-php.strtoupper = (value) => strval(value).toUpperCase();
-php.strtolower = (value) => strval(value).toLowerCase();
+mapable.floatval = num => +num;
+mapable.strtoupper = (value) => strval(value).toUpperCase();
+mapable.strtolower = (value) => strval(value).toLowerCase();
 php.substr = (str, from, length) => strval(str).slice(from, length !== undefined ? from + length : undefined);
 php.mb_substr = php.substr; // simple substr() behaves a bit differently with unicode, but nah
 php.str_pad = ($input, $pad_length, $pad_string = " ", $pad_type = php.STR_PAD_RIGHT) => {
@@ -266,7 +280,7 @@ php.str_pad = ($input, $pad_length, $pad_string = " ", $pad_type = php.STR_PAD_R
 };
 php.str_repeat = (str, n) => strval(str).repeat(n);
 
-php.implode = (...args) => {
+mapable.implode = (...args) => {
 	let [delim, values] = args;
 	if (values === undefined) {
 		values = delim;
@@ -276,9 +290,10 @@ php.implode = (...args) => {
 };
 php.explode = (delim, str) => strval(str).split(delim);
 
-php.ucfirst = str => str.slice(0, 1).toUpperCase() + str.slice(1);
-php.strlen = str => (str + "").length;
-php.mb_strlen = php.strlen; // mb_*() behaves a bit differently with unicode, but nah
+mapable.ucfirst = str => str.slice(0, 1).toUpperCase() + str.slice(1);
+let strlen = str => (str + "").length;
+mapable.strlen = strlen;
+mapable.mb_strlen = strlen; // mb_*() behaves a bit differently with unicode, but nah
 
 php.substr_replace = (str, replace, start, length = null) => {
 	if (length === null) {
@@ -304,7 +319,7 @@ php.str_replace = (search, replace, str) => {
 	let reg = new RegExp(regSrc, 'g');
 	return str.replace(reg, replace);
 };
-php.str_split = (str, size = 1) => {
+mapable.str_split = (str, size = 1) => {
 	if (size < 1) {
 		throw new Error('Invalid chunk size - ' + size + ', it must be >= 1');
 	}
@@ -332,9 +347,6 @@ let normReg = (pattern) => {
 	}
 	return pattern;
 };
-php.PREG_SPLIT_NO_EMPTY = 1;
-php.PREG_SPLIT_DELIM_CAPTURE = 2;
-php.PREG_SPLIT_OFFSET_CAPTURE = 2;
 php.preg_split = (regex, str, limit = -1, flags = 0) => {
 	let hasGroups = regex.source.match(/(?<!\\)\((?!\?:)/);
 	if (limit !== -1) {
@@ -437,8 +449,8 @@ php.preg_match_all = (pattern, str, dest, bitMask) => {
 //  array functions follow
 // ----------------------
 
-php.array_keys = (obj) => Object.keys(obj);
-php.array_values = (obj) => Object.values(obj);
+mapable.array_keys = (obj) => Object.keys(obj);
+mapable.array_values = (obj) => Object.values(obj);
 php.in_array = (value, arr) => {
 	if ((value + '').match(/^\d+$/)) {
 		for (let el of Object.values(arr)) {
@@ -453,19 +465,19 @@ php.in_array = (value, arr) => {
 };
 php.array_search = (needle, haystack, strict = false) => {
 	for (let [k,v] of Object.entries(haystack)) {
-		if (php.equals(v, needle, strict)) {
+		if (equals(v, needle, strict)) {
 			return k;
 		}
 	}
 	return false;
 };
 /** @param {Array} arr */
-php.array_shift = (arr) => arr.shift();
-php.array_push = (arr, el) => arr.push(el);
+mapable.array_shift = (arr) => arr.shift();
+mapable.array_push = (arr, el) => arr.push(el);
 /** @param {Array} arr */
-php.array_pop = (arr) => arr.pop();
+mapable.array_pop = (arr) => arr.pop();
 /** @param {Array} arr */
-php.array_unshift = (arr, value) => arr.unshift(value);
+mapable.array_unshift = (arr, value) => arr.unshift(value);
 
 php.array_key_exists = (key, obj) => key in obj;
 
@@ -511,7 +523,7 @@ php.array_diff_key = (minuend, subtrahend) => {
 	}
 	return difference;
 };
-php.array_flip = (obj) => {
+mapable.array_flip = (obj) => {
 	let newObj = {};
 	for (let [key, val] of Object.entries(obj)) {
 		newObj[val] = key;
@@ -559,7 +571,7 @@ php.range = (start, end, step = 1) => {
 	}
 	return arr;
 };
-php.array_unique = (arr) => {
+mapable.array_unique = (arr) => {
 	let occurrences = new Set();
 	if (Array.isArray(arr)) {
 		// will drop indexes unlike php, but who cares, really?
@@ -584,7 +596,7 @@ php.array_unique = (arr) => {
 		return obj;
 	}
 };
-php.array_reverse = (arr) => Object.values(arr).reverse();
+mapable.array_reverse = (arr) => Object.values(arr).reverse();
 php.array_chunk = chunk;
 php.array_pad = (array, size, value) => {
 	array = Object.values(array);
@@ -613,7 +625,7 @@ php.array_slice = (arr, start, length = undefined) => {
 	length = length === undefined ? arr.length : length;
 	return arr.slice(start, start + length);
 };
-php.array_sum = (arr) => {
+mapable.array_sum = (arr) => {
 	let result = 0;
 	for (let value of Object.values(arr)) {
 		result += +value;
@@ -644,7 +656,7 @@ php.array_combine = (keys, values) => {
 let normFunc = (func) => {
 	if (typeof func === 'string') {
 		if (func in php) {
-			func = php[func];
+			func = mapable[func];
 		} else {
 			throw Error('Unsupported built-in function - ' + func);
 		}
@@ -688,10 +700,8 @@ let isPlainObject = (val) => {
 		return val.constructor.name === 'Object';
 	}
 };
-php.count = val => Object.values(val).length;
+mapable.count = val => Object.values(val).length;
 
 //php.PREG_OFFSET_CAPTURE = 256;
 
-php.PHP_EOL = '\n';
-
-module.exports = php;
+module.exports = {...mapable, ...php};
