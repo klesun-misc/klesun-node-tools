@@ -77,7 +77,7 @@ module.exports = {
 	list: Object.values(classes),
 	/** handy when you need to filter a value in Promise chain */
 	nonEmpty: (msg = '(no description)', reject = null) => (value) => {
-		reject = reject || exports.NoContent;
+		reject = reject || classes.NoContent;
 		return value ? Promise.resolve(value)
 			: reject('Value is empty - ' + msg);
 	},
