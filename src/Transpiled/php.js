@@ -655,7 +655,7 @@ php.array_combine = (keys, values) => {
 
 let normFunc = (func) => {
 	if (typeof func === 'string') {
-		if (func in php) {
+		if (func in mapable) {
 			func = mapable[func];
 		} else {
 			throw Error('Unsupported built-in function - ' + func);
