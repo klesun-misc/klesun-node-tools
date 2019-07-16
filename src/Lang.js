@@ -44,3 +44,19 @@ exports.allWrap = promises => new Promise((resolve) => {
 		.catch(exc => rejected.push(exc))
 		.finally(checkResolved));
 });
+
+/**
+ * @template T
+ * @param {function(): Promise<T>} fetchValue
+ * @return {function(): Promise<T>}
+ */
+exports.onDemand = fetchValue => {
+	let whenValue = null;
+	return () => {
+		if (whenValue === null) {
+			whenValue = Promise.resolve()
+				.then(fetchValue);
+		}
+		return whenValue;
+	};
+};
