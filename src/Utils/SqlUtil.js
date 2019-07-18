@@ -1,4 +1,6 @@
 
+const Rej = require('../Rej.js')
+
 let {escapeRegex} = require('./Misc.js');
 
 let escCol = col => col
@@ -111,7 +113,8 @@ exports.makeSelectQuery = (params) => {
 
 exports.makeInsertQuery = ({table, rows}) => {
 	if (!rows.length) {
-		throw new Error('Can not create INSERT query: supplied rows are empty');
+		let msg = 'Can not create INSERT query: supplied rows are empty';
+		throw Rej.BadRequest.makeExc(msg);
 	}
 	let $colNames = Object.keys(rows[0]);
 	let $dataToInsert = [];
@@ -124,14 +127,14 @@ exports.makeInsertQuery = ({table, rows}) => {
 				if (!primitives.includes(typeof value) && value !== null) {
 					let error = 'Invalid insert value on key `' + $colName +
 						'` in the ' + $i + '-th row - ' + (typeof value);
-					throw new Error(error);
+					throw Rej.BadRequest.makeExc(error);
 				} else {
 					$dataToInsert.push(value);
 				}
 			} else {
 				let error = 'No key `' + $colName + '` in the ' +
 					$i + '-th row required to insert many';
-				throw new Error(error);
+				throw Rej.BadRequest.makeExc(error);
 			}
 		}
 	}
@@ -220,7 +223,7 @@ exports.selectFromArray = (params, allRows) => {
 	if (join.length > 0) {
 		let msg = 'Attempted to use JOIN ' + JSON.stringify(join) +
 			' on a collection - not supported yet (and maybe ever)';
-		throw new Error(msg);
+		throw Rej.NotImplemented.makeExc(msg);
 	}
 
 	// note that it does not currently handle custom
@@ -236,7 +239,7 @@ exports.selectFromArray = (params, allRows) => {
 						if (!(field in row)) {
 							let msg = 'Attempted to filter by field ' + field +
 								' not present in a row - ' + JSON.stringify(row);
-							throw new Error(msg);
+							throw Rej.BadRequest.makeExc(msg);
 						}
 						let rowValue = row[field];
 						if (op === '=') {
@@ -265,7 +268,7 @@ exports.selectFromArray = (params, allRows) => {
 							return !value.includes(rowValue);
 						} else {
 							let msg = 'Unsupported operator ' + op;
-							throw new Error(msg);
+							throw Rej.NotImplemented.makeExc(msg);
 						}
 					}));
 			}
@@ -275,7 +278,7 @@ exports.selectFromArray = (params, allRows) => {
 				if (!(field in aRow) || !(field in bRow)) {
 					let msg = 'Attempted to order by field ' + field +
 						' not present in a row - ' + JSON.stringify({aRow, bRow});
-					throw new Error(msg);
+					throw Rej.BadRequest.makeExc(msg);
 				}
 				let aVal = aRow[field];
 				let bVal = bRow[field];
@@ -299,7 +302,7 @@ exports.selectFromArray = (params, allRows) => {
 					if (!(field in row)) {
 						let msg = 'Attempted to return field ' + field +
 							' not present in a row - ' + JSON.stringify(row);
-						throw new Error(msg);
+						throw Rej.BadRequest.makeExc(msg);
 					}
 					result[field] = row[field];
 				}
