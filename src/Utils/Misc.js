@@ -1,8 +1,8 @@
+const Rej = require('../Rej.js');
 
 const PersistentHttpRq = require('./PersistentHttpRq.js');
 const BadGateway = require("./Rej").BadGateway;
 const querystring = require('querystring');
-const Lang = require('../Lang.js');
 
 exports.hrtimeToDecimal = (hrtime) => {
 	let [seconds, nanos] = hrtime;
@@ -131,17 +131,13 @@ exports.getExcData = (exc, moreData = null) => {
 	return props;
 };
 
-/**
- * @deprecated - use from the Lang.js module instead
- */
-exports.allWrap = Lang.allWrap;
-
 exports.timeout = (seconds, promise) => {
 	return Promise.race([
 		promise,
-		new Promise((_, reject) => setTimeout(() =>
-			reject(new Error('Timed out after ' + seconds + ' s.')), seconds * 1000)
-		),
+		new Promise((_, reject) => setTimeout(() => {
+			let msg = 'Timed out after ' + seconds + ' s.';
+			return reject(Rej.RequestTimeout.makeExc(msg));
+		}, seconds * 1000)),
 	]);
 };
 
