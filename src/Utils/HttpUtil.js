@@ -1,5 +1,6 @@
 
 const {getExcData} = require('../Utils/Misc.js');
+const DynUtils = require('../Dyn/DynUtils.js');
 
 let getRqBody = req => {
 	let rqBody = req.body;
@@ -33,11 +34,13 @@ let toHandleHttp = (httpAction) => (req, res) => {
 		.then(result => {
 			res.setHeader('Content-Type', 'application/json');
 			res.status(200);
-			res.send(JSON.stringify(Object.assign({
+			let isObj = Object(result) === Object(result);
+			let withMeta = !isObj ? result : Object.assign({
 				rqTakenMs: rqTakenMs,
 				rsSentMs: Date.now(),
-				message: 'GRECT HTTP OK',
-			}, result)));
+				process: DynUtils.descrProc(),
+			}, result);
+			res.send(JSON.stringify(withMeta));
 		})
 		.catch(exc => {
 			exc = exc || 'Empty error ' + exc;

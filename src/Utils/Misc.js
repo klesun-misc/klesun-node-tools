@@ -1,8 +1,5 @@
+const DynUtils = require('../Dyn/DynUtils.js');
 const Rej = require('../Rej.js');
-
-const PersistentHttpRq = require('./PersistentHttpRq.js');
-const BadGateway = require("./Rej").BadGateway;
-const querystring = require('querystring');
 
 exports.hrtimeToDecimal = (hrtime) => {
 	let [seconds, nanos] = hrtime;
@@ -141,40 +138,8 @@ exports.timeout = (seconds, promise) => {
 	]);
 };
 
-/**
- * this function makes a HTTP request to a service following the protocol created
- * by A. Prokopchuk, used across our company, common names of this protocol are:
- * "IQ JSON" (in RBS), "External Interface" (in BO), "client-component" (in CMS)...
- *
- * @return {Promise<{status: 'OK', result: *}>}
- */
-exports.iqJson = async ({url, credentials, functionName, serviceName, params}) =>
-	PersistentHttpRq({
-		url: url,
-		body: querystring.stringify({
-			credentials: JSON.stringify(credentials),
-			functionName: functionName,
-			serviceName: serviceName || null,
-			params: JSON.stringify(params || null),
-		}),
-		headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-		// I'm not sure, but it's possible that persisting connection caused RBS to be dying tonight
-		// (I dunno, maybe Apache did not release resources due to keep-alive or something...)
-		dropConnection: true,
-	}).then(respRec => {
-		let body = respRec.body;
-		let resp;
-		try {
-			resp = JSON.parse(body);
-		} catch (exc) {
-			return BadGateway('Could not parse IQ service ' + functionName + ' json response - ' + body);
-		}
-		if (resp.status !== 'OK' || !('result' in resp)) {
-			return BadGateway('Unexpected IQ service response format - ' + body, resp);
-		} else {
-			return Promise.resolve(resp);
-		}
-	});
+/** @deprecated - please, use from DynUtils.js module */
+exports.iqJson = DynUtils.iqJson;
 
 exports.msToSqlDt = (ms) => {
 	return new Date(ms).toISOString()
