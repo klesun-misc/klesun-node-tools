@@ -75,7 +75,7 @@ module.exports = {
 	...classes,
 	dict: classes,
 	list: Object.values(classes),
-	/** handy when you need to filter a value in Promise chain */
+	/** @deprecated - please, use from 'Lang.js' */
 	nonEmpty: (msg = '(no description)', reject = null) => (value) => {
 		reject = reject || classes.NoContent;
 		return value ? Promise.resolve(value)

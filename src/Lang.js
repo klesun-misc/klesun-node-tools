@@ -1,4 +1,6 @@
 
+const Rej = require('./Rej.js');
+
 /**
  * this module provides core helper functions that extend the
  * language constructions, somehow similar to 'std' lib in C
@@ -25,6 +27,9 @@ exports.coverExc = (allowedKinds, defaultValueFunc) => {
 		}
 	};
 };
+
+/** handy when you need to filter a value in Promise chain */
+exports.nonEmpty = Rej.nonEmpty;
 
 /**
  * @param {Promise[]} promises
@@ -59,4 +64,14 @@ exports.onDemand = fetchValue => {
 		}
 		return whenValue;
 	};
+};
+
+exports.timeout = (seconds, promise) => {
+	return Promise.race([
+		promise,
+		new Promise((_, reject) => setTimeout(() => {
+			let msg = 'Timed out after ' + seconds + ' s.';
+			return reject(Rej.RequestTimeout.makeExc(msg));
+		}, seconds * 1000)),
+	]);
 };
