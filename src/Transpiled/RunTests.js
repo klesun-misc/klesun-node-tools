@@ -16,18 +16,7 @@ let getFiles = async function* (dir) {
 	}
 };
 
-/**
- * supposed to be called from a runTests.js script in .gitlab-ci.yml
- * @param {{
- *     rootPath: '/home/vasja/gits/grect/tests/backend',
- *     ignoredPaths: [
- *         '/home/vasja/gits/grect/tests/backend/Transpiled/Lib/TestCase.js',
- *         '/home/vasja/gits/grect/tests/backend/Transpiled/php.js',
- *     ],
- *     maxMsPerTest: 10000,
- * }} params
- */
-let RunTests = async (params) => {
+let collectErrors = async (params) => {
 	let maxMsPerTest = params.maxMsPerTest || 10 * 1000;
 	let config = await getConfig();
 	config.external_service = {};
@@ -57,10 +46,8 @@ let RunTests = async (params) => {
 			let testInst = new testCls();
 			let tests = await testInst.getTests();
 			for (let test of tests) {
-				let error = await Misc.timeout(maxMsPerTest / 1000, test()).catch(exc => {
-					exc.message = 'Test ' + test + ' - ' + exc.message;
-					return Promise.reject(exc);
-				});
+				// TODO: pass test number and title here, or timeout there
+				let error = await Misc.timeout(maxMsPerTest / 1000, test());
 				if (error) {
 					errors.push(error);
 					if (args.includes('debug')) {
@@ -79,16 +66,35 @@ let RunTests = async (params) => {
 
 	console.log('\nFinished with ' + oks + ' oks and ' + errors.length + ' errors');
 
-	if (errors.length > 0) {
-		console.error('Unit test resulted in errors:');
-		for (let error of errors) {
-			console.error(error);
-		}
-		process.exit(1);
-	} else {
-		process.exit(0);
-	}
-
+	return Promise.resolve(errors);
 };
+
+/**
+ * supposed to be called from a runTests.js script in .gitlab-ci.yml
+ * @param {{
+ *     rootPath: '/home/vasja/gits/grect/tests/backend',
+ *     ignoredPaths: [
+ *         '/home/vasja/gits/grect/tests/backend/Transpiled/Lib/TestCase.js',
+ *         '/home/vasja/gits/grect/tests/backend/Transpiled/php.js',
+ *     ],
+ *     maxMsPerTest: 10000,
+ * }} params
+ */
+let RunTests = params => collectErrors(params)
+	.then(errors => {
+		if (errors.length > 0) {
+			console.error('Unit test resulted in errors:');
+			for (let error of errors) {
+				console.error(error);
+			}
+			process.exit(1);
+		} else {
+			process.exit(0);
+		}
+	})
+	.catch(exc => {
+		console.error('Error in test tool initialization', exc);
+		process.exit(2);
+	});
 
 module.exports = RunTests;
