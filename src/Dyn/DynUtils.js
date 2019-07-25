@@ -41,6 +41,9 @@ exports.iqJson = async ({url, credentials, functionName, serviceName, params}) =
 		// I'm not sure, but it's possible that persisting connection caused RBS to be dying tonight
 		// (I dunno, maybe Apache did not release resources due to keep-alive or something...)
 		dropConnection: true,
+	}).catch(exc => {
+		exc.message = 'IQ func ' + functionName + ' - ';
+		return Promise.reject(exc);
 	}).then(respRec => {
 		let body = respRec.body;
 		let resp;
