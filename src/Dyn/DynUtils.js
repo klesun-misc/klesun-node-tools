@@ -42,7 +42,7 @@ exports.iqJson = async ({url, credentials, functionName, serviceName, params}) =
 		// (I dunno, maybe Apache did not release resources due to keep-alive or something...)
 		dropConnection: true,
 	}).catch(exc => {
-		exc.message = 'IQ func ' + functionName + ' - ';
+		exc.message = 'IQ func ' + functionName + ' - ' + exc.message;
 		return Promise.reject(exc);
 	}).then(respRec => {
 		let body = respRec.body;

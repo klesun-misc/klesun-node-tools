@@ -57,7 +57,10 @@ let RunTests = async (params) => {
 			let testInst = new testCls();
 			let tests = await testInst.getTests();
 			for (let test of tests) {
-				let error = await Misc.timeout(maxMsPerTest / 1000, test());
+				let error = await Misc.timeout(maxMsPerTest / 1000, test()).catch(exc => {
+					exc.message = 'Test ' + test + ' - ' + exc.message;
+					return Promise.reject(exc);
+				});
 				if (error) {
 					errors.push(error);
 					if (args.includes('debug')) {
