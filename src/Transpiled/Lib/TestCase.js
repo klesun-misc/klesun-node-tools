@@ -167,7 +167,7 @@ class TestCase
 				try {
 					await test.call(this, ...dataset);
 				} catch (exc) {
-					testEvents.push({type: 'error', msg: 'Uncaught exception ' + exc.message + '\n' + exc.stack});
+					testEvents.push({type: 'error', msg: 'Uncaught exception ' + exc + '\n' + (exc || {}).stack});
 				}
 				this.log = (e) => { throw new Error('Please define test event logger'); };
 				let title = ((dataset || [])[0] || {}).title || '';
