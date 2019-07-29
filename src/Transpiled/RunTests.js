@@ -1,6 +1,6 @@
 const Misc = require("../Utils/Misc");
 
-const {getConfig} = require('../Config.js');
+const {getConfig, getDbConfig} = require('../Dyn/Config.js');
 const { resolve } = require('path');
 const { readdir, stat } = require('fs').promises;
 
@@ -18,7 +18,14 @@ let getFiles = async function* (dir) {
 
 let collectErrors = async (params) => {
 	let maxMsPerTest = params.maxMsPerTest || 10 * 1000;
-	let config = await getConfig();
+	Object.assign(await getDbConfig().catch(exc => ({})), {
+		DB_NAME: null,
+		DB_USER: null,
+		DB_PASS: null,
+		DB_HOST: null,
+		DB_PORT: null,
+	}).DB_NAME = null;
+	let config = await getConfig().catch(exc => ({}));
 	config.external_service = {};
 	config.RBS_PASSWORD = null;
 	// TODO: get rid of taking highlight rules from DB and uncomment following
