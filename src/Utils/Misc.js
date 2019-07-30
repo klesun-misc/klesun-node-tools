@@ -52,21 +52,8 @@ exports.mkReg = (parts) => new RegExp(parts
 /** @deprecated - please, use from 'Debug.js' */
 exports.jsExport = Debug.jsExport;
 
-exports.getExcData = (exc, moreData = null) => {
-	exc = exc || '(empty error)';
-	let props = {message: exc.message || exc + ''};
-	if (typeof exc === 'string') {
-		if (!moreData) {
-			return exc;
-		}
-	} else {
-		props = {...props, ...exc};
-		props.errorClass = props.errorClass || exc.constructor.name;
-		props.stack = exc.stack;
-	}
-	props = {...props, ...(moreData || {})};
-	return props;
-};
+/** @deprecated - please, use from 'Debug.js' */
+exports.getExcData = Debug.getExcData;
 
 /** @deprecated - please use from 'Lang.js' */
 exports.timeout = Lang.timeout;
