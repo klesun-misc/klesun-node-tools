@@ -22,7 +22,7 @@ let toHandleHttp = (httpAction) => (req, res) => {
 	let rqBody = getRqBody(req);
 	let rqTakenMs = Date.now();
 	return Promise.resolve()
-		.then(() => httpAction({rqBody, routeParams: req.params}))
+		.then(() => httpAction({rqBody, routeParams: req.params, request: req}))
 		.catch(exc => {
 			let excData = getExcData(exc);
 			if (typeof excData === 'string') {
