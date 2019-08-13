@@ -5,12 +5,6 @@
 // (to decide whether or not to write it to Diag, for example)
 
 let toReject = (httpStatusCode, isAlwaysOk = false) => {
-	let cls = Object.entries(classes)
-		.filter(([, reject]) => {
-			return +reject.httpStatusCode === +httpStatusCode;
-		})
-		.map(([cls]) => cls)[0] || httpStatusCode;
-
 	/**
 	 * @param {{passToClient: boolean, isOk: boolean, anythingElse: *}} data
 	 */
@@ -32,12 +26,17 @@ let toReject = (httpStatusCode, isAlwaysOk = false) => {
 	let reject = (msg, data = undefined) => {
 		let exc = makeExc(msg, data);
 		let rejection = Promise.reject(exc);
-		rejection.exc = exc;
+		let cls = Object.entries(classes)
+			.filter(([, reject]) => {
+				return +reject.httpStatusCode === +httpStatusCode;
+			})
+			.map(([cls]) => cls)[0] || httpStatusCode;
 		/**
 		 * for code mistakes when you `throw Rej.NotImplemented()`
 		 * instead if `throw Rej.NotImplemented.makeExc()`
 		 */
 		rejection.toString = () => 'Rej.' + cls + '(' + msg + ')';
+		rejection.exc = exc;
 		return rejection;
 	};
 	reject.httpStatusCode = httpStatusCode;
