@@ -1,5 +1,5 @@
 
-const {getExcData} = require('../Utils/Misc.js');
+const {getExcData} = require('../Debug.js');
 const DynUtils = require('../Dyn/DynUtils.js');
 
 let getRqBody = req => {
@@ -34,7 +34,7 @@ let toHandleHttp = (httpAction) => (req, res) => {
 		.then(result => {
 			res.setHeader('Content-Type', 'application/json');
 			res.status(200);
-			let isObj = Object(result) === Object(result);
+			let isObj = Object(result) === Object(result) && !Array.isArray(result);
 			let withMeta = !isObj ? result : Object.assign({
 				rqTakenMs: rqTakenMs,
 				rsSentMs: Date.now(),
