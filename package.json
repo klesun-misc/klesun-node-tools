@@ -16,7 +16,7 @@
   "main": "./src/index.js",
   "repository": {
     "type": "git",
-    "url": "ssh://git@gitlab.dyninno.net:1022/node-libraries/gds-direct-lib.git"
+    "url": "ssh://git@github.com:klesun-misc/klesun-node-tools.git"
   },
   "version": "0.0.1"
 }
