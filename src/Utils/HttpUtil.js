@@ -1,6 +1,5 @@
 
 const {getExcData} = require('../Debug.js');
-const DynUtils = require('../Dyn/DynUtils.js');
 
 let getRqBody = req => {
 	let rqBody = req.body;
@@ -38,7 +37,6 @@ let toHandleHttp = (httpAction) => (req, res) => {
 			let withMeta = !isObj ? result : Object.assign({
 				rqTakenMs: rqTakenMs,
 				rsSentMs: Date.now(),
-				process: DynUtils.descrProc(),
 			}, result);
 			res.send(JSON.stringify(withMeta));
 		})

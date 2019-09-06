@@ -1,6 +1,5 @@
 const Debug = require('../Debug.js');
 const Lang = require('../Lang.js');
-const DynUtils = require('../Dyn/DynUtils.js');
 
 exports.hrtimeToDecimal = (hrtime) => {
 	let [seconds, nanos] = hrtime;
@@ -57,9 +56,6 @@ exports.getExcData = Debug.getExcData;
 
 /** @deprecated - please use from 'Lang.js' */
 exports.timeout = Lang.timeout;
-
-/** @deprecated - please, use from DynUtils.js module */
-exports.iqJson = DynUtils.iqJson;
 
 exports.msToSqlDt = (ms) => {
 	return new Date(ms).toISOString()
