@@ -2,12 +2,11 @@
 const {getExcData} = require('../Debug.js');
 
 let getRqBody = req => {
-	let rqBody = req.body;
-	if (Object.keys(rqBody).length === 0) {
-		let querystring = require('querystring');
-		let queryStr = req.url.split('?')[1] || '';
-		rqBody = querystring.parse(queryStr);
-	}
+	const rqBody = req.body;
+	const querystring = require('querystring');
+	const queryStr = req.url.split('?')[1] || '';
+	Object.assign(rqBody, querystring.parse(queryStr));
+
 	return rqBody;
 };
 
