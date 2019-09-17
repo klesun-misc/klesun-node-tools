@@ -178,6 +178,53 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 		return testCases.map(c => [c]);
 	}
 
+	provide_makeInsertQuery() {
+		let testCases = [];
+
+		testCases.push({
+			title: 'insert example',
+			input: {
+				table: 'Contracts',
+				rows: [{
+					name: 'MNL to JFK best deal evar',
+					data: '{"airline":"UA","price":"350.00"}',
+				}],
+			},
+			output: {
+				sql: [
+					'INSERT',
+					'INTO Contracts (name, data)',
+					'VALUES (?, ?)',
+					'ON DUPLICATE KEY UPDATE name = VALUES(name), data = VALUES(data)',
+				].join('\n'),
+				placedValues: ['MNL to JFK best deal evar', '{"airline":"UA","price":"350.00"}'],
+			}
+		});
+
+		testCases.push({
+			title: 'insert example without update',
+			input: {
+				table: 'Contracts',
+				newOnly: true,
+				rows: [{
+					name: 'MNL to JFK best deal evar',
+					data: '{"airline":"UA","price":"350.00"}',
+				}],
+			},
+			output: {
+				sql: [
+					'INSERT',
+					'INTO Contracts (name, data)',
+					'VALUES (?, ?)',
+					'',
+				].join('\n'),
+				placedValues: ['MNL to JFK best deal evar', '{"airline":"UA","price":"350.00"}'],
+			}
+		});
+
+		return testCases.map(c => [c]);
+	}
+
 	provide_selectFromArray() {
 		let testCases = [];
 
@@ -285,6 +332,11 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 		this.assertArrayElementsSubset(output, actual);
 	}
 
+	test_makeInsertQuery({input, output}) {
+		let actual = SqlUtil.makeInsertQuery(input);
+		this.assertArrayElementsSubset(output, actual);
+	}
+
 	test_selectFromArray({input, output}) {
 		let actual = SqlUtil.selectFromArray(input.params, input.allRows);
 		this.assertArrayElementsSubset(output, actual);
@@ -294,6 +346,7 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 		return [
 			[this.provide_makeSelectQuery, this.test_makeSelectQuery],
 			[this.provide_makeDeleteQuery, this.test_makeDeleteQuery],
+			[this.provide_makeInsertQuery, this.test_makeInsertQuery],
 			[this.provide_selectFromArray, this.test_selectFromArray],
 		];
 	}

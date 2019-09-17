@@ -1,5 +1,5 @@
 
-const Rej = require('../Rej.js')
+const Rej = require('../Rej.js');
 
 let {escapeRegex} = require('./Misc.js');
 
@@ -111,7 +111,7 @@ exports.makeSelectQuery = (params) => {
 	return {sql, placedValues: allPlacedValues};
 };
 
-exports.makeInsertQuery = ({table, rows}) => {
+exports.makeInsertQuery = ({table, rows, newOnly = false}) => {
 	if (!rows.length) {
 		let msg = 'Can not create INSERT query: supplied rows are empty';
 		throw Rej.BadRequest.makeExc(msg);
@@ -147,9 +147,10 @@ exports.makeInsertQuery = ({table, rows}) => {
 		'INSERT',
 		'INTO ' + table + ' (' + $colNames.join(', ') + ')',
 		'VALUES ' + $allPlaces,
-		'ON DUPLICATE KEY UPDATE ' + $colNames
-			.map(($colName) => $colName + ' = VALUES(' + $colName + ')')
-			.join(', '),
+		newOnly ? '' :
+			'ON DUPLICATE KEY UPDATE ' + $colNames
+				.map(($colName) => $colName + ' = VALUES(' + $colName + ')')
+				.join(', '),
 	].join('\n');
 
 	return {sql, placedValues: $dataToInsert};
