@@ -1,5 +1,5 @@
 
-interface makeSelectQuery_rq {
+export interface makeSelectQuery_rq {
     table: 'cmd_rq_log',
     as: 'crl',
     fields?: ['gds'],
