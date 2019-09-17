@@ -1,26 +1,28 @@
 
+type operator = '=' | '>=' | '<=' | '!=' | 'LIKE';
+
+type condition =
+    ['gds', '=', 'apollo'] |
+    ['terminalNumber', '=', '2'] |
+    [string, operator, string];
+
 export interface makeSelectQuery_rq {
-    table: 'cmd_rq_log',
-    as: 'crl',
-    fields?: ['gds'],
-    join?: [{
-        type?: 'left',
-        table: 'terminal_command_log',
-        as: 'tcl',
-        on: [['tcl.cmd_rq_id', '=', 'crl.id']],
-    }],
-    where?: [
-        ['gds', '=', 'apollo'],
-        ['terminalNumber', '=', '2']
-    ],
-    whereOr?: [
-        [['rbsSessionId', '=', '12345']],
-        [['gdsSessionDataMd5', '=', 'abcvsdadadajwnekjn']]
-    ],
-    orderBy?: [
-        ['duration', 'ASC'],
-        ['id', 'DESC']
-    ],
-    skip?: '0',
-    limit?: '100',
+    table: 'cmd_rq_log' | string;
+    as?: 'crl' | string;
+    fields?: Array<'gds' | string>;
+    join?: Array<{
+        type?: 'left' | string,
+        table: 'terminal_command_log' | string,
+        as: 'tcl' | string,
+        on: Array<['tcl.cmd_rq_id' | string, operator, 'crl.id' | string]>,
+    }>;
+    where?: condition[];
+    whereOr?: condition[][];
+    orderBy?: Array<
+        ['duration', 'ASC'] |
+        ['id', 'DESC'] |
+        [string, 'ASC' | 'DESC']
+    >;
+    skip?: '0' | number;
+    limit?: '100' | number;
 }
