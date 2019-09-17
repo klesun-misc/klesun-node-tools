@@ -2,7 +2,7 @@
 const {getExcData} = require('../Debug.js');
 
 let getRqBody = req => {
-	const rqBody = req.body;
+	const rqBody = req.body || {};
 	const querystring = require('querystring');
 	const queryStr = req.url.split('?')[1] || '';
 	Object.assign(rqBody, querystring.parse(queryStr));
