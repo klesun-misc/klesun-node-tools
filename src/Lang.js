@@ -16,7 +16,8 @@ const Rej = require('./Rej.js');
  *           status is in allowedStatuses, otherwise reject with original exc
  * supposed to be used with promise.catch(coverExc([Rej.NotFound], () => null)) to catch particular kinds of exceptions
  */
-exports.coverExc = (allowedKinds, defaultValueFunc) => {
+exports.coverExc = (allowedKinds, defaultValueFunc = null) => {
+	defaultValueFunc = defaultValueFunc || (exc => null);
 	return (exc) => {
 		let allowedCodes = allowedKinds.map(r => r.httpStatusCode);
 		if (exc && allowedCodes.includes(exc.httpStatusCode)) {
