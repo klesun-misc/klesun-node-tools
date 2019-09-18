@@ -1,10 +1,12 @@
 
-type operator = '=' | '>=' | '<=' | '!=' | 'LIKE';
+type operator = '=' | '>=' | '<=' | '!=';
 
 type condition =
     ['gds', '=', 'apollo'] |
     ['terminalNumber', '=', '2'] |
-    [string, operator, string];
+    [string, operator, string | number] |
+    [string, 'IN', Array<string | number>] |
+    [string, 'LIKE', string];
 
 export interface makeSelectQuery_rq {
     table: 'cmd_rq_log' | string;
