@@ -14,10 +14,10 @@ let makeConds = (dataAnds) => {
 	for (let tuple of dataAnds) {
 		if (tuple.length === 1) {
 			// custom SQL condition, no placeholder
-			textAnds.push(tuple[0]);
+			textAnds.push('(' + tuple[0] + ')');
 		} else {
 			let [col, operator, value] = tuple;
-			let escapedCol = escCol(col);;
+			let escapedCol = escCol(col);
 			if (operator.toUpperCase() === 'IN' ||
 				operator.toUpperCase() === 'NOT IN'
 			) {
@@ -87,7 +87,7 @@ exports.makeSelectQuery = (params) => {
 				+ (j.as ? ' AS ' + j.as : '')
 				+ ' ON ' + j.on.map(([l, op, r]) =>
 					l + ' ' + op + ' ' + r))
-			.join(''),
+			.join('\n'),
 	];
 	if (whereOr.length > 0 && whereOr[0].length > 0) {
 		let textOrs = [];
