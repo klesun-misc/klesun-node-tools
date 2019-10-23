@@ -1,33 +1,33 @@
 
-let http = require('http');
-let https = require('https');
-let url = require('url');
-let {BadRequest, BadGateway} = require('../Utils/Rej.js');
+const http = require('http');
+const https = require('https');
+const url = require('url');
+const {BadRequest, BadGateway} = require('../Utils/Rej.js');
 
-let agentParams = {
+const agentParams = {
 	keepAlive: true,
 	keepAliveMsecs: 3 * 60 * 1000, // 3 minutes
 	// the default "infinity" should actually be good enough
 	//maxSockets: 50,
 };
-let httpsAgent = new https.Agent(agentParams);
-let httpAgent = new http.Agent(agentParams);
+const httpsAgent = new https.Agent(agentParams);
+const httpAgent = new http.Agent(agentParams);
 
-let normalizeParams = (params) => {
+const normalizeParams = (params) => {
 	if (!params.url) {
 		return BadRequest('url parameter is mandatory');
 	}
-	let parsedUrl = url.parse(params.url);
+	const parsedUrl = url.parse(params.url);
 	if (!parsedUrl.protocol) {
 		return BadRequest('Invalid url, no protocol - ' + params.url);
 	}
 	if (!parsedUrl.host) {
 		return BadRequest('Invalid url, no host - ' + params.url);
 	}
-	let request = parsedUrl.protocol.startsWith('https') ? https.request : http.request;
-	let requestAgent = params.dropConnection ? undefined :
+	const request = parsedUrl.protocol.startsWith('https') ? https.request : http.request;
+	const requestAgent = params.dropConnection ? undefined :
 		parsedUrl.protocol.startsWith('https') ? httpsAgent : httpAgent;
-	let rqParams = {
+	const rqParams = {
 		host: parsedUrl.hostname,
 		port: parsedUrl.port || undefined,
 		path: parsedUrl.path,
@@ -44,19 +44,19 @@ let normalizeParams = (params) => {
  * Travelport response takes 0.17 seconds instead of 0.7 from Europe when you preserve the connection
  * it also returns a promise
  */
-let PersistentHttpRq = (params) => {
+const PersistentHttpRq = (params) => {
 	return new Promise(async (resolve, reject) => {
-		let {request, rqParams, parsedUrl} = await normalizeParams(params);
-		let req = request(rqParams, (res) => {
+		const {request, rqParams, parsedUrl} = await normalizeParams(params);
+		const req = request(rqParams, (res) => {
 			let responseBody = '';
 			res.setEncoding('utf8');
 			res.on('data', (chunk) => responseBody += chunk);
 			res.on('end', () => {
-				let result = {headers: res.headers, body: responseBody};
+				const result = {headers: res.headers, body: responseBody};
 				if (res.statusCode != 200) {
-					let msg = 'Http request to external service failed - ' +
+					const msg = 'Http request to external service failed - ' +
 						res.statusCode + ' - ' + parsedUrl.path + ' - ' + responseBody;
-					reject(BadGateway.makeExc(msg, result));
+					reject(BadGateway.makeExc(msg, {parsedUrl, result}));
 				} else {
 					resolve(result);
 				}
@@ -64,15 +64,15 @@ let PersistentHttpRq = (params) => {
 		});
 		req.on('error', (e) => {
 			let msg = 'Failed to make request - ' + e;
-			reject(BadGateway.makeExc(msg));
+			reject(BadGateway.makeExc(msg, {parsedUrl, stack: (e || {}).stack}));
 		});
 		req.end(params.body);
 	});
 };
 
-let countSockets = (hostToSockets) => {
-	let result = {};
-	for (let [host, sockets] of Object.entries(hostToSockets)) {
+const countSockets = (hostToSockets) => {
+	const result = {};
+	for (const [host, sockets] of Object.entries(hostToSockets)) {
 		result[host] = sockets.length;
 	}
 	return result;
