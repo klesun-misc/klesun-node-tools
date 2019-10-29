@@ -50,6 +50,8 @@ let isOk = true;
 let classes = {
 	// non-error responses
 	NoContent: toReject(204, isOk),
+	ResetContent: toReject(205, isOk),
+	PartialContent: toReject(206, isOk),
 
 	// user errors
 	BadRequest: toReject(400),
