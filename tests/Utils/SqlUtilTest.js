@@ -146,12 +146,34 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 				sql: [
 					'SELECT * FROM terminal_command_log',
 					'',
-					'WHERE `area` = ? AND `session_id` = ? AND `type` IN (?, ?, ?)',
-					'   OR `area` = ? AND `session_id` = ? AND `is_mr` = ?',
+					'WHERE `area` = ? AND `session_id` = ? AND (`type` IN (?, ?, ?) OR `is_mr` = ?)',
 					'ORDER BY `id` DESC',
 				].join('\n'),
-				placedValues: ['C', 4326435, 'redisplayPnr', 'itinerary', 'storedPricing', 'C', 4326435, true]
+				placedValues: ['C', 4326435, 'redisplayPnr', 'itinerary', 'storedPricing', true]
 			}
+		});
+
+		testCases.push({
+			title: 'whereTree example',
+			input: {
+				table: 'terminal_command_log',
+				where: [
+					['area', '=', 'B'],
+					['is_mr', '=', false],
+					['OR', [
+						['type', 'IS', null],
+						['type', 'NOT IN', ['moveRest', 'openPnr']],
+					]],
+				],
+			},
+			output: {
+				sql: [
+					'SELECT * FROM terminal_command_log',
+					'',
+					'WHERE `area` = ? AND `is_mr` = ? AND (`type` IS ? OR `type` NOT IN (?, ?))',
+				].join('\n'),
+				placedValues: ['B', false, null, 'moveRest', 'openPnr'],
+			},
 		});
 
 		testCases.push({
@@ -186,8 +208,8 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 					" left JOIN rulesAirlines AS rulesAirlines ON rulesAirlines.ruleId = rules.id",
 					" left JOIN rulesItineraryAirlines AS rulesItineraryAirlines ON rulesItineraryAirlines.ruleId = rules.id",
 					" left JOIN rulesFareTypes AS rulesFareTypes ON rulesFareTypes.ruleId = rules.id",
-					"WHERE (`applyRulesTo` = 'both' OR `applyRulesTo` = 'agents' OR `applyRulesTo` IS NULL OR `applyRulesTo` = '') AND `linkType` = ? AND `token` = ?",
-					"   OR (`applyRulesTo` = 'both' OR `applyRulesTo` = 'agents' OR `applyRulesTo` IS NULL OR `applyRulesTo` = '') AND `linkType` = ? AND `parentId` = ?",
+					"WHERE (`applyRulesTo` = 'both' OR `applyRulesTo` = 'agents' OR `applyRulesTo` IS NULL OR `applyRulesTo` = '') "
+					+ "AND ((`linkType` = ? AND `token` = ?) OR (`linkType` = ? AND `parentId` = ?))",
 				].join("\n"),
 				placedValues: ['token', 'qwerty123', 'parentId', 12345]
 			}

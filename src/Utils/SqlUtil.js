@@ -1,51 +1,91 @@
 
 const Rej = require('../Rej.js');
 
-let {escapeRegex} = require('./Misc.js');
+const {escapeRegex} = require('./Misc.js');
 
-let escCol = col => col
+const escCol = col => col
 	.split('.')
 	.map(p => '`' + p + '`')
 	.join('.');
 
-let makeConds = (dataAnds) => {
-	let placedValues = [];
-	let textAnds = [];
-	for (let tuple of dataAnds) {
-		if (tuple.length === 1) {
-			// custom SQL condition, no placeholder
-			textAnds.push('(' + tuple[0] + ')');
-		} else {
-			let [col, operator, value] = tuple;
-			let escapedCol = escCol(col);
-			if (operator.toUpperCase() === 'IN' ||
-				operator.toUpperCase() === 'NOT IN'
-			) {
-				textAnds.push(escapedCol + ' ' + operator + ' (' + value
-					.map(v => '?').join(', ') + ')');
-				placedValues.push(...value);
-			} else {
-				textAnds.push(escapedCol + ' ' + operator + ' ?');
-				placedValues.push(value);
-			}
-		}
+const makeCond = (tuple, level = 0) => {
+	if (level > 100) {
+		// could also use level for pretty printing...
+		const msg = 'Circular references in SQL condition tree';
+		throw Rej.InternalServerError.makeExc(msg, tuple);
 	}
-	let sql = textAnds.join(' AND ');
-	return {sql, placedValues};
+	if (tuple.length === 1) {
+		// custom SQL condition, no placeholder
+		return {
+			sql: '(' + tuple[0] + ')',
+			placedValues: [],
+			needsParentheses: false,
+		};
+	} else if (tuple.length === 2) {
+		// parentheses
+		const [operator, operands] = tuple;
+		const conds = operands
+			.map(op => makeCond(op, level + 1))
+			.filter(c => c.sql);
+		if (conds.length === 1) {
+			return conds[0];
+		} else {
+			return {
+				sql: conds
+					.map(c => c.needsParentheses
+						? '(' + c.sql + ')' : c.sql)
+					.join(' ' + operator + ' '),
+				placedValues: conds.flatMap(c => c.placedValues),
+				needsParentheses: true,
+			};
+		}
+	} else {
+		// plain condition
+		const [col, operator, value] = tuple;
+		const escapedCol = escCol(col);
+		const textAnds = [];
+		const placedValues = [];
+		if (operator.toUpperCase() === 'IN' ||
+			operator.toUpperCase() === 'NOT IN'
+		) {
+			textAnds.push(escapedCol + ' ' + operator + ' (' + value
+				.map(v => '?').join(', ') + ')');
+			placedValues.push(...value);
+		} else {
+			textAnds.push(escapedCol + ' ' + operator + ' ?');
+			placedValues.push(value);
+		}
+		let sql;
+		if (textAnds.length === 0) {
+			sql = ''; // empty condition, equivalent to TRUE
+		} else if (textAnds.length === 1) {
+			sql = textAnds[0];
+		} else {
+			sql = textAnds.join(' AND ');
+		}
+		return {
+			sql, placedValues,
+			needsParentheses: textAnds.length > 1,
+		};
+	}
 };
 
-let normalizeSelectParams = (params) => {
+const makeConds = (dataAnds) => {
+	return makeCond(['AND', dataAnds]);
+};
+
+const normalizeSelectParams = (params) => {
 	let {
 		table, as, fields = [], join = [], where = [], whereOr = [],
 		orderBy = [], limit = null, skip = null,
 	} = params;
 
-	if (whereOr.length === 0) {
-		whereOr = [where];
-	} else {
-		// supposedly you would not use both "whereOr" and "where" at once, but
-		// if you happen to, add the global "where" condition to all "or" condition
-		whereOr = whereOr.map(ands => where.concat(ands));
+	if (whereOr.length > 0 && whereOr[0].length > 0) {
+		// whereTree - I think the easiest way is to think about
+		// it as AND being Array.every() and OR being Array.some()
+		where = [...where,
+			['OR', whereOr.map(ands => ['AND', ands])],
+		];
 	}
 
 	// legacy
@@ -57,7 +97,7 @@ let normalizeSelectParams = (params) => {
 	}
 
 	return {
-		table, as, fields, join, whereOr,
+		table, as, fields, join, where,
 		orderBy, limit, skip,
 	};
 };
@@ -73,7 +113,7 @@ let normalizeSelectParams = (params) => {
  */
 exports.makeSelectQuery = (params) => {
 	let {
-		table, as, fields, join, whereOr,
+		table, as, fields, join, where,
 		orderBy, limit, skip,
 	} = normalizeSelectParams(params);
 
@@ -89,14 +129,12 @@ exports.makeSelectQuery = (params) => {
 					l + ' ' + op + ' ' + r))
 			.join('\n'),
 	];
-	if (whereOr.length > 0 && whereOr[0].length > 0) {
-		let textOrs = [];
-		for (let dataOr of whereOr) {
-			let {sql, placedValues} = makeConds(dataOr);
-			textOrs.push(sql);
+	if (where.length > 0) {
+		let {sql, placedValues} = makeConds(where);
+		if (sql) {
 			allPlacedValues.push(...placedValues);
+			sqlParts.push('WHERE ' + sql);
 		}
-		sqlParts.push('WHERE ' + textOrs.join('\n   OR '));
 	}
 	if (orderBy.length > 0) {
 		sqlParts.push(`ORDER BY ` + orderBy
@@ -207,6 +245,64 @@ let isValue = (rowValue, value) => {
 	}
 };
 
+const matchesCondition = (row, condTuple, level = 0) => {
+	if (level > 100) {
+		// probably should better check occurrences instead of depth limit
+		const msg = 'Circular references in SQL condition tree';
+		throw Rej.InternalServerError.makeExc(msg, condTuple);
+	}
+	if (condTuple.length === 1) {
+		const msg = 'Attempted to use custom SQL in array filtering';
+		throw Rej.NotImplemented.makeExc(msg, condTuple);
+	} else if (condTuple.length === 2) {
+		const [operator, operands] = condTuple;
+		if (operator.toUpperCase() === 'AND') {
+			return operands.every(op => matchesCondition(row, op, level + 1));
+		} else if ((operator.toUpperCase() === 'OR')) {
+			return operands.some(op => matchesCondition(row, op, level + 1));
+		} else {
+			const msg = 'Unsupported conjunction operator - ' + operator;
+			throw Rej.NotImplemented.makeExc(msg, condTuple);
+		}
+	} else {
+		const [field, op, value] = condTuple;
+		if (!(field in row)) {
+			let msg = 'Attempted to filter by field ' + field +
+				' not present in a row - ' + JSON.stringify(row);
+			throw Rej.BadRequest.makeExc(msg, condTuple);
+		}
+		let rowValue = row[field];
+		if (op === '=') {
+			return rowValue == value;
+		} else if (op === '!=') {
+			return rowValue != value;
+		} else if (op === '>=') {
+			return rowValue >= value;
+		} else if (op === '>') {
+			return rowValue > value;
+		} else if (op === '<=') {
+			return rowValue <= value;
+		} else if (op === '<') {
+			return rowValue < value;
+		} else if (op.toUpperCase() === 'IS') {
+			return isValue(rowValue, value);
+		} else if (op.toUpperCase() === 'IS NOT') {
+			return !isValue(rowValue, value);
+		} else if (op.toUpperCase() === 'LIKE') {
+			return isStrLike(rowValue, value);
+		} else if (op.toUpperCase() === 'NOT LIKE') {
+			return !isStrLike(rowValue, value);
+		} else if (op.toUpperCase() === 'IN') {
+			return value.includes(rowValue);
+		} else if (op.toUpperCase() === 'NOT IN') {
+			return !value.includes(rowValue);
+		} else {
+			let msg = 'Unsupported field operator ' + op;
+			throw Rej.NotImplemented.makeExc(msg, condTuple);
+		}
+	}
+};
+
 /**
  * SQL queries in unit tests, yay!
  *
@@ -217,7 +313,7 @@ let isValue = (rowValue, value) => {
  */
 exports.selectFromArray = (params, allRows) => {
 	let {
-		table, as, fields, join, whereOr,
+		table, as, fields, join, where,
 		orderBy, limit, skip,
 	} = normalizeSelectParams(params);
 
@@ -231,49 +327,7 @@ exports.selectFromArray = (params, allRows) => {
 	// expressions or joins anyhow for simplicity sake
 
 	return allRows
-		.filter(row => {
-			if (whereOr.length === 0) {
-				return true;
-			} else {
-				return whereOr.some(ands => ands
-					.every(([field, op, value]) => {
-						if (!(field in row)) {
-							let msg = 'Attempted to filter by field ' + field +
-								' not present in a row - ' + JSON.stringify(row);
-							throw Rej.BadRequest.makeExc(msg);
-						}
-						let rowValue = row[field];
-						if (op === '=') {
-							return rowValue == value;
-						} else if (op === '!=') {
-							return rowValue != value;
-						} else if (op === '>=') {
-							return rowValue >= value;
-						} else if (op === '>') {
-							return rowValue > value;
-						} else if (op === '<=') {
-							return rowValue <= value;
-						} else if (op === '<') {
-							return rowValue < value;
-						} else if (op.toUpperCase() === 'IS') {
-							return isValue(rowValue, value);
-						} else if (op.toUpperCase() === 'IS NOT') {
-							return !isValue(rowValue, value);
-						} else if (op.toUpperCase() === 'LIKE') {
-							return isStrLike(rowValue, value);
-						} else if (op.toUpperCase() === 'NOT LIKE') {
-							return !isStrLike(rowValue, value);
-						} else if (op.toUpperCase() === 'IN') {
-							return value.includes(rowValue);
-						} else if (op.toUpperCase() === 'NOT IN') {
-							return !value.includes(rowValue);
-						} else {
-							let msg = 'Unsupported operator ' + op;
-							throw Rej.NotImplemented.makeExc(msg);
-						}
-					}));
-			}
-		})
+		.filter(row => matchesCondition(row, ['AND', where]))
 		.sort((aRow, bRow) => {
 			for (let [field, direction = 'ASC'] of orderBy) {
 				if (!(field in aRow) || !(field in bRow)) {
