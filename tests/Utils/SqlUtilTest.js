@@ -176,6 +176,27 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 			},
 		});
 
+		const where = [
+			['area', '=', 'B'],
+			['is_mr', '=', false],
+			['OR', [
+				['type', 'IS', null],
+				['type', 'NOT IN', ['moveRest', 'openPnr']],
+			]],
+		];
+		where[2][1].push(['AND', where]);
+
+		testCases.push({
+			title: 'whereTree circular references',
+			input: {
+				table: 'terminal_command_log',
+				where: where,
+			},
+			output: {
+				error: 'Error: Circular references in SQL condition tree',
+			},
+		});
+
 		testCases.push({
 			title: 'should add braces in each `where` entry in case user inputs raw SQL in them',
 			input: {
@@ -384,7 +405,16 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 	}
 
 	test_makeSelectQuery({input, output}) {
-		let actual = SqlUtil.makeSelectQuery(input);
+		let actual;
+		try {
+			actual = SqlUtil.makeSelectQuery(input);
+		} catch (exc) {
+			if (output && output.error) {
+				actual = {error: exc + ''};
+			} else {
+				throw exc;
+			}
+		}
 		this.assertArrayElementsSubset(output, actual);
 	}
 
