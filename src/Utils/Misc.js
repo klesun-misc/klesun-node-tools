@@ -1,3 +1,4 @@
+const Xml = require('./Xml.js');
 const Debug = require('../Debug.js');
 const Lang = require('../Lang.js');
 
@@ -17,16 +18,8 @@ exports.chunk = (arr, size) => {
 
 exports.escapeRegex = (str) => str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
 
-exports.escapeXml = (unsafe) =>
-	unsafe.replace(/[<>&'"]/g, (c) => {
-		switch (c) {
-			case '<': return '&lt;';
-			case '>': return '&gt;';
-			case '&': return '&amp;';
-			case '\'': return '&apos;';
-			case '"': return '&quot;';
-		}
-	});
+/** @deprecated - use from Xml.js directly */
+exports.escapeXml = Xml.escape;
 
 /**
  * @return RegExp
