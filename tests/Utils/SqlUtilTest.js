@@ -287,7 +287,7 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 			title: 'insert example without update',
 			input: {
 				table: 'Contracts',
-				newOnly: true,
+				insertType: 'insertNew',
 				rows: [{
 					name: 'MNL to JFK best deal evar',
 					data: '{"airline":"UA","price":"350.00"}',
@@ -296,6 +296,27 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 			output: {
 				sql: [
 					'INSERT',
+					'INTO Contracts (name, data)',
+					'VALUES (?, ?)',
+					'',
+				].join('\n'),
+				placedValues: ['MNL to JFK best deal evar', '{"airline":"UA","price":"350.00"}'],
+			}
+		});
+
+		testCases.push({
+			title: 'replace example',
+			input: {
+				table: 'Contracts',
+				insertType: 'replace',
+				rows: [{
+					name: 'MNL to JFK best deal evar',
+					data: '{"airline":"UA","price":"350.00"}',
+				}],
+			},
+			output: {
+				sql: [
+					'REPLACE',
 					'INTO Contracts (name, data)',
 					'VALUES (?, ?)',
 					'',

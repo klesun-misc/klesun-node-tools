@@ -149,7 +149,7 @@ exports.makeSelectQuery = (params) => {
 	return {sql, placedValues: allPlacedValues};
 };
 
-exports.makeInsertQuery = ({table, rows, newOnly = false}) => {
+exports.makeInsertQuery = ({table, rows, insertType = 'insertOrUpdate', syntax = 'mysql'}) => {
 	if (!rows.length) {
 		let msg = 'Can not create INSERT query: supplied rows are empty';
 		throw Rej.BadRequest.makeExc(msg);
@@ -182,10 +182,10 @@ exports.makeInsertQuery = ({table, rows, newOnly = false}) => {
 	let $allPlaces = new Array(rows.length).fill($rowPlaces).join(', ');
 
 	let sql = [
-		'INSERT',
+		insertType === 'replace' ? 'REPLACE' : 'INSERT',
 		'INTO ' + table + ' (' + $colNames.join(', ') + ')',
 		'VALUES ' + $allPlaces,
-		newOnly ? '' :
+		insertType !== 'insertOrUpdate' ? '' :
 			'ON DUPLICATE KEY UPDATE ' + $colNames
 				.map(($colName) => $colName + ' = VALUES(' + $colName + ')')
 				.join(', '),
