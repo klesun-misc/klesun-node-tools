@@ -214,19 +214,16 @@ exports.makeUpdateQuery = ({table, set, where}) => {
 	return {sql, placedValues};
 };
 
-exports.makeDeleteQuery = ({table, where = []}) => {
-	let makeConds = ands => ands.map(([col, operator]) =>
-		'`' + col + '` ' + operator + ' ?').join(' AND ');
-	let sql = [
-		`DELETE FROM ${table}`,
-		`WHERE TRUE`,
-		where.length === 0 ? '' :
-			'AND ' + makeConds(where),
-	].join('\n');
-
-	let placedValues = where.map(([col, op, val]) => val);
-
-	return {sql, placedValues};
+exports.makeDeleteQuery = (params) => {
+	const {table, where = []} = normalizeSelectParams(params);
+	const sqlParts = [`DELETE FROM ${table}`];
+	const allPlacedValues = [];
+	const {sql, placedValues} = makeConds(where);
+	if (sql) {
+		allPlacedValues.push(...placedValues);
+		sqlParts.push('WHERE ' + sql);
+	}
+	return {sql: sqlParts.join('\n'), placedValues: allPlacedValues};
 };
 
 let isStrLike = (str, pattern) => {

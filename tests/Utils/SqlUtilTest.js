@@ -250,10 +250,57 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 			"output": {
 				"sql": [
 					"DELETE FROM cmd_rs_log",
-					"WHERE TRUE",
-					"AND `responseTimestamp` < ?",
+					"WHERE `responseTimestamp` < ?",
 				].join("\n"),
 				"placedValues": [235847561]
+			}
+		});
+
+		testCases.push({
+			title: 'boolean tree example',
+			"input": {
+				table: 'Locations',
+				where: [['OR', [
+					['AND', [
+						['type', '=', 'country'],
+						['value', '=', 'US'],
+					]],
+					['AND', [
+						['type', '=', 'city'],
+						['value', '=', 'MOW'],
+					]],
+				]]],
+			},
+			"output": {
+				"sql": [
+					"DELETE FROM Locations",
+					"WHERE (`type` = ? AND `value` = ?) OR (`type` = ? AND `value` = ?)",
+				].join("\n"),
+				"placedValues": ['country', 'US', 'city', 'MOW'],
+			}
+		});
+
+		testCases.push({
+			title: 'boolean tree example',
+			"input": {
+				table: 'Locations',
+				whereOr: [
+					[
+						['type', '=', 'country'],
+						['value', '=', 'US'],
+					],
+					[
+						['type', '=', 'city'],
+						['value', '=', 'MOW'],
+					],
+				],
+			},
+			"output": {
+				"sql": [
+					"DELETE FROM Locations",
+					"WHERE (`type` = ? AND `value` = ?) OR (`type` = ? AND `value` = ?)",
+				].join("\n"),
+				"placedValues": ['country', 'US', 'city', 'MOW'],
 			}
 		});
 
