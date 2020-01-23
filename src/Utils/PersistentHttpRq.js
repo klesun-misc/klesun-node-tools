@@ -51,6 +51,14 @@ const PersistentHttpRq = (params) => {
 			let responseBody = '';
 			res.setEncoding('utf8');
 			res.on('data', (chunk) => responseBody += chunk);
+			res.on('error', (exc) => {
+				let msg = 'Error while reading response body - ' + e;
+				reject(BadGateway.makeExc(msg, {parsedUrl, responseBody}));
+			});
+			res.on('aborted', () => {
+				let msg = 'Network connection aborted preliminary';
+				reject(BadGateway.makeExc(msg, {parsedUrl, responseBody}));
+			});
 			res.on('end', () => {
 				const result = {headers: res.headers, body: responseBody};
 				if (res.statusCode != 200) {
