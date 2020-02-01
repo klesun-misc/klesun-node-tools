@@ -77,7 +77,7 @@ const makeConds = (dataAnds) => {
 const normalizeSelectParams = (params) => {
 	let {
 		table, as, fields = [], join = [], where = [], whereOr = [],
-		orderBy = [], limit = null, skip = null,
+		orderBy = [], groupBy = [], limit = null, skip = null,
 	} = params;
 
 	if (whereOr.length > 0 && whereOr[0].length > 0) {
@@ -98,7 +98,7 @@ const normalizeSelectParams = (params) => {
 
 	return {
 		table, as, fields, join, where,
-		orderBy, limit, skip,
+		orderBy, groupBy, limit, skip,
 	};
 };
 
@@ -114,7 +114,7 @@ const normalizeSelectParams = (params) => {
 exports.makeSelectQuery = (params) => {
 	let {
 		table, as, fields, join, where,
-		orderBy, limit, skip,
+		orderBy, groupBy, limit, skip,
 	} = normalizeSelectParams(params);
 
 	let makeFields = fieldList => fieldList.length > 0 ? fieldList.join(',') : '*';
@@ -135,6 +135,9 @@ exports.makeSelectQuery = (params) => {
 			allPlacedValues.push(...placedValues);
 			sqlParts.push('WHERE ' + sql);
 		}
+	}
+	if (groupBy.length > 0) {
+		sqlParts.push('GROUP BY ' + groupBy.map(escCol).join(', '));
 	}
 	if (orderBy.length > 0) {
 		sqlParts.push(`ORDER BY ` + orderBy
@@ -311,7 +314,7 @@ const matchesCondition = (row, condTuple, level = 0) => {
 exports.selectFromArray = (params, allRows) => {
 	let {
 		table, as, fields, join, where,
-		orderBy, limit, skip,
+		orderBy, groupBy, limit, skip,
 	} = normalizeSelectParams(params);
 
 	if (join.length > 0) {
@@ -323,8 +326,19 @@ exports.selectFromArray = (params, allRows) => {
 	// note that it does not currently handle custom
 	// expressions or joins anyhow for simplicity sake
 
+	const occurrences = new Set();
 	return allRows
 		.filter(row => matchesCondition(row, ['AND', where]))
+		.filter(row => {
+			if (groupBy.length > 0) {
+				const occurrence = JSON.stringify(groupBy.map(f => row[f]));
+				if (occurrences.has(occurrence)) {
+					return false;
+				}
+				occurrences.add(occurrence);
+			}
+			return true;
+		})
 		.sort((aRow, bRow) => {
 			for (let [field, direction = 'ASC'] of orderBy) {
 				if (!(field in aRow) || !(field in bRow)) {

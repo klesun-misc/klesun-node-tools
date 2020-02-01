@@ -236,6 +236,33 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 			}
 		});
 
+		testCases.push({
+			title: 'GROUP BY example',
+			"input": {
+				table: 'Locations',
+				whereOr: [
+					[
+						['type', '=', 'country'],
+						['value', '=', 'US'],
+					],
+					[
+						['type', '=', 'city'],
+						['value', '=', 'MOW'],
+					],
+				],
+				groupBy: ['type', 'value'],
+			},
+			"output": {
+				"sql": [
+					"SELECT * FROM Locations",
+					"",
+					"WHERE (`type` = ? AND `value` = ?) OR (`type` = ? AND `value` = ?)",
+					"GROUP BY `type`, `value`",
+				].join("\n"),
+				"placedValues": ['country', 'US', 'city', 'MOW'],
+			}
+		});
+
 		return testCases.map(c => [c]);
 	}
 
@@ -466,6 +493,38 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 				{session_id: 4326435, id: 9, type: 'redisplayPnr', is_mr: false, area: 'C'},
 				{session_id: 4326435, id: 4, type: 'storedPricing', is_mr: false, area: 'C'},
 				{session_id: 4326435, id: 3, type: 'priceItinerary', is_mr: true, area: 'C'},
+			],
+		});
+
+		testCases.push({
+			title: 'example with GROUP BY (...)',
+			input: {
+				params: {
+					table: 'terminal_command_log',
+					where: [
+						['type', 'IN', ['priceItinerary', 'redisplayPnr', 'changeArea', 'itinerary']],
+					],
+					groupBy: ['type'],
+					orderBy: 'id DESC',
+				},
+				allRows: [
+					{session_id: 4326435, id: 1, type: 'priceItinerary', is_mr: false, area: 'C'},
+					{session_id: 1832814, id: 2, type: 'priceItinerary', is_mr: true, area: 'C'},
+					{session_id: 4326435, id: 3, type: 'priceItinerary', is_mr: true, area: 'C'},
+					{session_id: 4326435, id: 4, type: 'storedPricing', is_mr: false, area: 'C'},
+					{session_id: 4326435, id: 5, type: 'changeArea', is_mr: false, area: 'C'},
+					{session_id: 4326435, id: 6, type: 'redisplayPnr', is_mr: false, area: 'B'},
+					{session_id: 4326435, id: 7, type: 'itinerary', is_mr: false, area: 'B'},
+					{session_id: 4326435, id: 8, type: 'changeArea', is_mr: false, area: 'B'},
+					{session_id: 4326435, id: 9, type: 'redisplayPnr', is_mr: false, area: 'C'},
+					{session_id: 1832814, id: 10, type: 'redisplayPnr', is_mr: true, area: 'C'},
+				],
+			},
+			output: [
+				{session_id: 4326435, id: 7, type: 'itinerary', is_mr: false, area: 'B'},
+				{session_id: 4326435, id: 6, type: 'redisplayPnr', is_mr: false, area: 'B'},
+				{session_id: 4326435, id: 5, type: 'changeArea', is_mr: false, area: 'C'},
+				{session_id: 4326435, id: 1, type: 'priceItinerary', is_mr: false, area: 'C'},
 			],
 		});
 
