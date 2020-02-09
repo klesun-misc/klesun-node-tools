@@ -4,7 +4,7 @@
  * class - extend it and implement the getTestMapping() in each your test class
  */
 
-let {jsExport} = require("../../Utils/Misc");
+let {jsExport} = require("../../Debug.js");
 
 let php = require('../php.js');
 
@@ -51,33 +51,31 @@ class TestCase
 		return false;
 	}
 
-	_isList($arr)  {
-		return !$arr || php.array_keys($arr) === php.range(0, php.count($arr) - 1);
-	}
-
-	assertArrayElementsSubsetInternal($expectation, $reality, $message = '', $noExtraIndexes = false) {
+	assertArrayElementsSubsetInternal(expectation, reality, message = '', noExtraIndexes = false) {
 		let $key, $value;
-		if (php.is_array($expectation) && php.is_array($reality)) {
-			for ([$key, $value] of Object.entries($expectation)) {
+		if (php.is_array(expectation) && php.is_array(reality)) {
+			for ([$key, $value] of Object.entries(expectation)) {
 				if ($value !== undefined) {
-					this.assertArrayHasKey($key, $reality, $message);
+					this.assertArrayHasKey($key, reality, message);
 				}
-				this.assertArrayElementsSubsetInternal($value, $reality[$key], $message+'['+$key+']', $noExtraIndexes);
+				this.assertArrayElementsSubsetInternal($value, reality[$key], message+'['+$key+']', noExtraIndexes);
 			}
-			if ($noExtraIndexes && this._isList($expectation)) {
-				this.assertLessThanOrEqual(php.count($expectation), php.count($reality), $message+' actual list is longer than expected');
+			if (noExtraIndexes && Array.isArray(expectation)) {
+				this.assertLessThanOrEqual(php.count(expectation), php.count(reality), message+' actual list is longer than expected');
 			}
 		} else {
-			if (php.is_array($expectation) && !php.is_array($reality)) {
-				$message += ' (actual is not array/obj)';
-			} else if (!php.is_array($expectation) && php.is_array($reality)) {
-				$message += ' (expected is not array/obj)';
+			if (php.is_array(expectation) && !php.is_array(reality)) {
+				message += ' (actual is not array/obj)';
+			} else if (!php.is_array(expectation) && php.is_array(reality)) {
+				message += ' (expected is not array/obj)';
 			}
-			this.assertSame($expectation, $reality, $message);
+			this.assertSame(expectation, reality, message);
 		}
 	}
 
 	/**
+	 * @deprecated - prefer assertSubTree()
+	 *
 	 * Asserts arraySubset, but more verbosily
 	 *
 	 * @param bool $noExtraIndexes - checks number of elements in non-associative
@@ -86,16 +84,20 @@ class TestCase
 	 * @param  string  $message
 	 * @throws PHPUnit_Framework_AssertionFailedError
 	 */
-	assertArrayElementsSubset($expectation, $reality, $message = '', $noExtraIndexes = false)  {
+	assertArrayElementsSubset(expectation, reality, message = '', noExtraIndexes = false)  {
 		try {
-			return this.assertArrayElementsSubsetInternal($expectation, $reality, $message, $noExtraIndexes);
+			return this.assertArrayElementsSubsetInternal(expectation, reality, message, noExtraIndexes);
 		} catch (exc) {
 			let args = process.argv.slice(process.execArgv.length + 2);
 			if (args.includes('debug')) {
-				console.log('\n$reality\n', JSON.stringify($reality));
+				console.log('\n$reality\n', JSON.stringify(reality));
 			}
 			throw exc;
 		}
+	}
+
+	assertSubTree(expectedSubTree, actualTree, message = '')  {
+		return this.assertArrayElementsSubset(expectedSubTree, actualTree, message, true);
 	}
 
 	assertSame(expected, actual, msg) {

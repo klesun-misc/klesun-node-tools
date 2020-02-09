@@ -542,22 +542,22 @@ class SqlUtilTest extends require('../../src/Transpiled/Lib/TestCase.js') {
 				throw exc;
 			}
 		}
-		this.assertArrayElementsSubset(output, actual);
+		this.assertSubTree(output, actual);
 	}
 
 	test_makeDeleteQuery({input, output}) {
 		let actual = SqlUtil.makeDeleteQuery(input);
-		this.assertArrayElementsSubset(output, actual);
+		this.assertSubTree(output, actual);
 	}
 
 	test_makeInsertQuery({input, output}) {
 		let actual = SqlUtil.makeInsertQuery(input);
-		this.assertArrayElementsSubset(output, actual);
+		this.assertSubTree(output, actual);
 	}
 
 	test_selectFromArray({input, output}) {
 		let actual = SqlUtil.selectFromArray(input.params, input.allRows);
-		this.assertArrayElementsSubset(output, actual);
+		this.assertSubTree(output, actual);
 	}
 
 	getTestMapping() {
