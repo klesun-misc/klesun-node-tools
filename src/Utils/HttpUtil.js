@@ -11,6 +11,47 @@ let getRqBody = req => {
 };
 
 /**
+ * @param path = '/entry/midiana/../../secret/ololo.pem'
+ * @return {String} '/secret/ololo.pem'
+ */
+const removeDots = path => {
+    const parts = path.split('/');
+    const resultParts = [];
+    for (const part of parts) {
+        if (part === '..' && resultParts.slice(-1)[0] !== '..') {
+            while (resultParts.slice(-1)[0] === '.') resultParts.pop();
+            if (resultParts.length > 0) {
+                resultParts.pop();
+            } else {
+                resultParts.push('..');
+            }
+        } else if (part !== '.') {
+            resultParts.push(part);
+        }
+    }
+    return resultParts.join('/');
+};
+
+/** @param {http.ServerResponse} rs */
+const setCorsHeaders = rs => {
+    rs.setHeader('Access-Control-Allow-Origin', '*');
+    rs.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+    rs.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    rs.setHeader('Access-Control-Allow-Credentials', true);
+};
+
+const getMimeByExt = (ext) => {
+    const mapping = {
+        'html': 'text/html',
+        'css': 'text/css',
+        'js': 'text/javascript',
+        'ts': 'text/typescript',
+        'svg': 'image/svg+xml',
+    };
+    return mapping[ext];
+};
+
+/**
  * this function maps HTTP request to an action that returns promise of a json data
  *
  * @param {function} httpAction - an action that returns a promise wrapping the json data for response
@@ -59,3 +100,6 @@ let toHandleHttp = (httpAction) => (req, res) => {
 
 exports.getRqBody = getRqBody;
 exports.toHandleHttp = toHandleHttp;
+exports.removeDots = removeDots;
+exports.setCorsHeaders = setCorsHeaders;
+exports.getMimeByExt = getMimeByExt;
