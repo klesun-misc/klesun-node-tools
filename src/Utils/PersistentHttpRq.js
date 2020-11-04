@@ -44,12 +44,20 @@ const normalizeParams = (params) => {
  * Travelport response takes 0.17 seconds instead of 0.7 from Europe when you preserve the connection
  * it also returns a promise
  *
+ * note, this implementation, while convenient, is not very idiomatic, as I did not know on the moment of
+ * writing that body should be retunred as a stream to be able to process gibibytes of data and track progress
+ *
  * @param {{
  *     url: string,
  *     headers?: Record<string, string>,
  *     method: 'GET' | 'POST',
  *     body?: string
  * }} params
+ *
+ * @return {Promise<{
+ *     headers: Record<string, string>,
+ *     body: string,
+ * }>}
  */
 const PersistentHttpRq = (params) => {
 	return new Promise(async (resolve, reject) => {
