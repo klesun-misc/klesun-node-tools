@@ -43,6 +43,13 @@ const normalizeParams = (params) => {
  * a wrapper around http.request that preserves connection for continuous calls
  * Travelport response takes 0.17 seconds instead of 0.7 from Europe when you preserve the connection
  * it also returns a promise
+ *
+ * @param {{
+ *     url: string,
+ *     headers?: Record<string, string>,
+ *     method: 'GET' | 'POST',
+ *     body?: string
+ * }} params
  */
 const PersistentHttpRq = (params) => {
 	return new Promise(async (resolve, reject) => {
