@@ -4,19 +4,43 @@
 // I now prefer `throw exc`/`return value` pattern rather than `return Promise.reject(exc)`/`return Promise.resolve(value)`, 
 // since it's less verbose, and can be used in a sync context, so here goes exception version of the Rej.js
 
+type ExpectedError = ErrorExtendedData & {
+    isOk: true,
+    message: string,
+    toString: () => string,
+}
+
+type UnexpectedError = ErrorExtendedData & Error & {
+    isOk: false,
+}
+
+type ErrorExtendedData = {
+    httpStatusCode: number,
+    /**
+     * whether this error is ok to be ignored and not be reported
+     * intended for expected user errors, like wrong password, limit exceeded, etc...
+     */
+    isOk: boolean,
+    /** error-specific data in free form format */
+    data: unknown,
+}
+
+type StatusError = ExpectedError | UnexpectedError;
+
 let toMakeExc = (httpStatusCode: number, okByDefault = false): ExcCls => {
-    const makeExcOlolo: ExcCls = (msg: string, data = undefined) => {
-        let exc, isOk;
+    const makeExc: ExcCls = (msg: string, data = undefined) => {
+        let exc: StatusError, isOk;
         ({isOk, ...data} = (data || {}));
         if (isOk === undefined) {
             isOk = okByDefault;
         }
+        let untypedExc: Error | ExpectedError;
         if (!isOk) {
-            exc = new Error(msg);
+            exc = <StatusError>new Error(msg);
         } else {
             // this is probably faster, and saves you few days of life
             // when you see tons of meaningless stack traces in the log
-            exc = {message: msg, toString: () => msg};
+            exc = <StatusError>{message: msg, toString: () => msg, isOk: true};
         }
         exc.httpStatusCode = httpStatusCode;
         exc.isOk = isOk;
@@ -33,9 +57,9 @@ let toMakeExc = (httpStatusCode: number, okByDefault = false): ExcCls => {
         exc.toString = () => 'Exc.' + cls + '(' + msg + ')';
         return exc;
     };
-    makeExcOlolo.httpStatusCode = httpStatusCode;
-    makeExcOlolo.matches = (otherCode) => otherCode == httpStatusCode;
-    return makeExcOlolo;
+    makeExc.httpStatusCode = httpStatusCode;
+    makeExc.matches = (otherCode) => otherCode == httpStatusCode;
+    return makeExc;
 };
 
 let isOk = true;
@@ -50,7 +74,7 @@ type ExcCls = {
     httpStatusCode: number,
     matches: (otherCode: number) => boolean,
 } & (
-    (msg: string, data?: ExcData) => Error
+    (msg: string, data?: ExcData) => StatusError
 );
 
 let classes = {
