@@ -45,16 +45,6 @@ let toMakeExc = (httpStatusCode: number, okByDefault = false): ExcCls => {
         exc.httpStatusCode = httpStatusCode;
         exc.isOk = isOk;
         exc.data = data;
-        let cls = Object.entries(classes)
-            .filter(([, cls]) => {
-                return +cls.httpStatusCode === +httpStatusCode;
-            })
-            .map(([cls]) => cls)[0] || httpStatusCode;
-        /**
-         * for code mistakes when you `throw Rej.NotImplemented()`
-         * instead if `throw Rej.NotImplemented.makeExc()`
-         */
-        exc.toString = () => 'Exc.' + cls + '(' + msg + ')';
         return exc;
     };
     makeExc.httpStatusCode = httpStatusCode;
