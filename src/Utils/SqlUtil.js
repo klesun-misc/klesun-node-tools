@@ -1,6 +1,4 @@
 
-const Rej = require('../Rej.js');
-
 const {escapeRegex} = require('./Misc.js');
 
 const escCol = col => col
@@ -12,7 +10,7 @@ const makeCond = (tuple, level = 0) => {
 	if (level > 100) {
 		// could also use level for pretty printing...
 		const msg = 'Circular references in SQL condition tree';
-		throw Rej.InternalServerError.makeExc(msg, tuple);
+		throw new Error(msg);
 	}
 	if (tuple.length === 1) {
 		// custom SQL condition, no placeholder
@@ -155,7 +153,7 @@ exports.makeSelectQuery = (params) => {
 exports.makeInsertQuery = ({table, rows, insertType = 'insertOrUpdate', syntax = 'mysql'}) => {
 	if (!rows.length) {
 		let msg = 'Can not create INSERT query: supplied rows are empty';
-		throw Rej.BadRequest.makeExc(msg);
+		throw new Error(msg);
 	}
 	let $colNames = Object.keys(rows[0]);
 	let $dataToInsert = [];
@@ -168,14 +166,14 @@ exports.makeInsertQuery = ({table, rows, insertType = 'insertOrUpdate', syntax =
 				if (!primitives.includes(typeof value) && value !== null) {
 					let error = 'Invalid insert value on key `' + $colName +
 						'` in the ' + $i + '-th row - ' + (typeof value);
-					throw Rej.BadRequest.makeExc(error);
+					throw new Error(error);
 				} else {
 					$dataToInsert.push(value);
 				}
 			} else {
 				let error = 'No key `' + $colName + '` in the ' +
 					$i + '-th row required to insert many';
-				throw Rej.BadRequest.makeExc(error);
+				throw new Error(error);
 			}
 		}
 	}
@@ -249,11 +247,11 @@ const matchesCondition = (row, condTuple, level = 0) => {
 	if (level > 100) {
 		// probably should better check occurrences instead of depth limit
 		const msg = 'Circular references in SQL condition tree';
-		throw Rej.InternalServerError.makeExc(msg, condTuple);
+		throw new Error(msg);
 	}
 	if (condTuple.length === 1) {
 		const msg = 'Attempted to use custom SQL in array filtering';
-		throw Rej.NotImplemented.makeExc(msg, condTuple);
+		throw new Error(msg, condTuple);
 	} else if (condTuple.length === 2) {
 		const [operator, operands] = condTuple;
 		if (operator.toUpperCase() === 'AND') {
@@ -262,14 +260,14 @@ const matchesCondition = (row, condTuple, level = 0) => {
 			return operands.some(op => matchesCondition(row, op, level + 1));
 		} else {
 			const msg = 'Unsupported conjunction operator - ' + operator;
-			throw Rej.NotImplemented.makeExc(msg, condTuple);
+			throw new Error(msg, condTuple);
 		}
 	} else {
 		const [field, op, value] = condTuple;
 		if (!(field in row)) {
 			let msg = 'Attempted to filter by field ' + field +
 				' not present in a row - ' + JSON.stringify(row);
-			throw Rej.BadRequest.makeExc(msg, condTuple);
+			throw new Error(msg, condTuple);
 		}
 		let rowValue = row[field];
 		if (op === '=') {
@@ -298,7 +296,7 @@ const matchesCondition = (row, condTuple, level = 0) => {
 			return !value.includes(rowValue);
 		} else {
 			let msg = 'Unsupported field operator ' + op;
-			throw Rej.NotImplemented.makeExc(msg, condTuple);
+			throw new Error(msg);
 		}
 	}
 };
@@ -320,7 +318,7 @@ exports.selectFromArray = (params, allRows) => {
 	if (join.length > 0) {
 		let msg = 'Attempted to use JOIN ' + JSON.stringify(join) +
 			' on a collection - not supported yet (and maybe ever)';
-		throw Rej.NotImplemented.makeExc(msg);
+		throw new Error(msg);
 	}
 
 	// note that it does not currently handle custom
@@ -344,7 +342,7 @@ exports.selectFromArray = (params, allRows) => {
 				if (!(field in aRow) || !(field in bRow)) {
 					let msg = 'Attempted to order by field ' + field +
 						' not present in a row - ' + JSON.stringify({aRow, bRow});
-					throw Rej.BadRequest.makeExc(msg);
+					throw new Error(msg);
 				}
 				let aVal = aRow[field];
 				let bVal = bRow[field];
@@ -368,7 +366,7 @@ exports.selectFromArray = (params, allRows) => {
 					if (!(field in row)) {
 						let msg = 'Attempted to return field ' + field +
 							' not present in a row - ' + JSON.stringify(row);
-						throw Rej.BadRequest.makeExc(msg);
+						throw new Error(msg);
 					}
 					result[field] = row[field];
 				}
