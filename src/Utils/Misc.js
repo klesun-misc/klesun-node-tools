@@ -1,6 +1,3 @@
-const Debug = require('../Debug.js');
-const Lang = require('../Lang.js');
-
 exports.hrtimeToDecimal = (hrtime) => {
 	let [seconds, nanos] = hrtime;
 	let rest = ('0'.repeat(9) + nanos).slice(-9);
