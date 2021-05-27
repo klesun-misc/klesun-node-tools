@@ -49,7 +49,7 @@ const assertSubTree = (expectedSubTree, actualTree, message = '') => {
 /**
  * @template TTestCase
  * @typedef {[
- *     function(): Promise<TTestCase[]> | TTestCase[],
+ *     function(): Promise<Iterable<TTestCase>> | Iterable<TTestCase>,
  *     function(TTestCase): Promise<void> | void,
  * ]} TestMappingEntry
  */
@@ -76,17 +76,19 @@ const runTestSuites = async function*(testSuites) {
         };
         continue;
       }
-      for (let i = 0; i < testCases.length; ++i) {
-        yield {kind: 'LOG', message: '    Processing test case #' + i};
+      let j = 0;
+      for (const testCase of testCases) {
+        yield {kind: 'LOG', message: '    Processing test case #' + j};
         try {
-          await test(testCases[i]);
+          await test(testCase);
           yield {kind: 'SUCCESS'};
         } catch (error) {
           yield {
             kind: 'TEST_FAILURE',
-            suiteName, testName, testCaseNumber: i, error,
+            suiteName, testName, testCaseNumber: j, error,
           };
         }
+        ++j;
       }
     }
   }

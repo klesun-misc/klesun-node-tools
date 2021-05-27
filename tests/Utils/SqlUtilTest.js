@@ -1,10 +1,8 @@
 const SqlUtil = require("../../src/Utils/SqlUtil");
 const {assertSubTree} = require("../../src/Utils/Testing.js");
 
-const provide_makeSelectQuery = () => {
-	let testCases = [];
-
-	testCases.push({
+const provide_makeSelectQuery = function*() {
+	yield {
 		"input": {
 			"table": "cmd_rq_log",
 			"where": [["agentId", "=", "2911"], ["requestId", "=", "0"]],
@@ -21,9 +19,9 @@ const provide_makeSelectQuery = () => {
 			].join("\n"),
 			"placedValues": ["2911", "0"]
 		}
-	});
+	};
 
-	testCases.push({
+	yield {
 		"input": {
 			"table": "migrations",
 			"where": [
@@ -34,9 +32,9 @@ const provide_makeSelectQuery = () => {
 			"sql": "SELECT * FROM migrations\n\nWHERE `name` = ?",
 			"placedValues": ["GRECT/2019.04.17005-create-mentioned-pnrs-table"]
 		}
-	});
+	};
 
-	testCases.push({
+	yield {
 		"input": {
 			"table": "terminal_sessions",
 			"as": "ts",
@@ -54,9 +52,9 @@ const provide_makeSelectQuery = () => {
 			].join("\n"),
 			"placedValues": []
 		}
-	});
+	};
 
-	testCases.push({
+	yield {
 		"input": {
 			"table": "terminal_sessions",
 			"as": "ts",
@@ -87,9 +85,9 @@ const provide_makeSelectQuery = () => {
 			].join("\n"),
 			"placedValues": ["6206", "sabre", "15102", "18544584", "TXH2HK"]
 		}
-	});
+	};
 
-	testCases.push({
+	yield {
 		"input": {
 			"table": "terminal_command_log",
 			"where": [["session_id", "=", 773]],
@@ -104,9 +102,9 @@ const provide_makeSelectQuery = () => {
 			].join("\n"),
 			"placedValues": [773]
 		}
-	});
+	};
 
-	testCases.push({
+	yield {
 		"title": "example with custom SQL condition in where",
 		"input": {
 			"table": "terminal_command_log",
@@ -126,9 +124,9 @@ const provide_makeSelectQuery = () => {
 			].join("\n"),
 			"placedValues": [773, "2019-05-17"]
 		}
-	});
+	};
 
-	testCases.push({
+	yield {
 		title: 'example with IN (...)',
 		input: {
 			table: 'terminal_command_log',
@@ -151,9 +149,9 @@ const provide_makeSelectQuery = () => {
 			].join('\n'),
 			placedValues: ['C', 4326435, 'redisplayPnr', 'itinerary', 'storedPricing', true]
 		}
-	});
+	};
 
-	testCases.push({
+	yield {
 		title: 'whereTree example',
 		input: {
 			table: 'terminal_command_log',
@@ -174,7 +172,7 @@ const provide_makeSelectQuery = () => {
 			].join('\n'),
 			placedValues: ['B', false, null, 'moveRest', 'openPnr'],
 		},
-	});
+	};
 
 	const where = [
 		['area', '=', 'B'],
@@ -186,7 +184,7 @@ const provide_makeSelectQuery = () => {
 	];
 	where[2][1].push(['AND', where]);
 
-	testCases.push({
+	yield {
 		title: 'whereTree circular references',
 		input: {
 			table: 'terminal_command_log',
@@ -195,9 +193,9 @@ const provide_makeSelectQuery = () => {
 		output: {
 			error: 'Error: Circular references in SQL condition tree',
 		},
-	});
+	};
 
-	testCases.push({
+	yield {
 		title: 'should add braces in each `where` entry in case user inputs raw SQL in them',
 		input: {
 			table: 'rules',
@@ -234,9 +232,9 @@ const provide_makeSelectQuery = () => {
 			].join("\n"),
 			placedValues: ['token', 'qwerty123', 'parentId', 12345]
 		}
-	});
+	};
 
-	testCases.push({
+	yield {
 		title: 'GROUP BY example',
 		"input": {
 			table: 'Locations',
@@ -261,15 +259,11 @@ const provide_makeSelectQuery = () => {
 			].join("\n"),
 			"placedValues": ['country', 'US', 'city', 'MOW'],
 		}
-	});
-
-	return testCases;
+	};
 };
 
-const provide_makeDeleteQuery = () => {
-	let testCases = [];
-
-	testCases.push({
+const provide_makeDeleteQuery = function*() {
+	yield {
 		"input": {
 			"table": "cmd_rs_log",
 			"where": [["responseTimestamp", "<", 235847561]],
@@ -281,9 +275,9 @@ const provide_makeDeleteQuery = () => {
 			].join("\n"),
 			"placedValues": [235847561]
 		}
-	});
+	};
 
-	testCases.push({
+	yield {
 		title: 'boolean tree example',
 		"input": {
 			table: 'Locations',
@@ -305,9 +299,9 @@ const provide_makeDeleteQuery = () => {
 			].join("\n"),
 			"placedValues": ['country', 'US', 'city', 'MOW'],
 		}
-	});
+	};
 
-	testCases.push({
+	yield {
 		title: 'boolean tree example',
 		"input": {
 			table: 'Locations',
@@ -329,15 +323,11 @@ const provide_makeDeleteQuery = () => {
 			].join("\n"),
 			"placedValues": ['country', 'US', 'city', 'MOW'],
 		}
-	});
-
-	return testCases;
+	};
 };
 
-const provide_makeInsertQuery = () => {
-	let testCases = [];
-
-	testCases.push({
+const provide_makeInsertQuery = function*() {
+	yield {
 		title: 'insert example',
 		input: {
 			table: 'Contracts',
@@ -355,9 +345,9 @@ const provide_makeInsertQuery = () => {
 			].join('\n'),
 			placedValues: ['MNL to JFK best deal evar', '{"airline":"UA","price":"350.00"}'],
 		}
-	});
+	};
 
-	testCases.push({
+	yield {
 		title: 'insert example without update',
 		input: {
 			table: 'Contracts',
@@ -376,9 +366,9 @@ const provide_makeInsertQuery = () => {
 			].join('\n'),
 			placedValues: ['MNL to JFK best deal evar', '{"airline":"UA","price":"350.00"}'],
 		}
-	});
+	};
 
-	testCases.push({
+	yield {
 		title: 'replace example',
 		input: {
 			table: 'Contracts',
@@ -397,15 +387,11 @@ const provide_makeInsertQuery = () => {
 			].join('\n'),
 			placedValues: ['MNL to JFK best deal evar', '{"airline":"UA","price":"350.00"}'],
 		}
-	});
-
-	return testCases;
+	};
 };
 
-const provide_selectFromArray = () => {
-	let testCases = [];
-
-	testCases.push({
+const provide_selectFromArray = function*() {
+	yield {
 		title: 'basic example',
 		input: {
 			params: {
@@ -429,9 +415,9 @@ const provide_selectFromArray = () => {
 			{id: 3, amount: '300.00'},
 			{id: 1, amount: '500.00'},
 		],
-	});
+	};
 
-	testCases.push({
+	yield {
 		title: 'terminal_command_log last availability command example',
 		input: {
 			params: {
@@ -459,9 +445,9 @@ const provide_selectFromArray = () => {
 		output: [
 			{id: 3, area: 'B', type: 'airAvailability'},
 		],
-	});
+	};
 
-	testCases.push({
+	yield {
 		title: 'example with IN (...)',
 		input: {
 			params: {
@@ -494,9 +480,9 @@ const provide_selectFromArray = () => {
 			{session_id: 4326435, id: 4, type: 'storedPricing', is_mr: false, area: 'C'},
 			{session_id: 4326435, id: 3, type: 'priceItinerary', is_mr: true, area: 'C'},
 		],
-	});
+	};
 
-	testCases.push({
+	yield {
 		title: 'example with GROUP BY (...)',
 		input: {
 			params: {
@@ -526,9 +512,7 @@ const provide_selectFromArray = () => {
 			{session_id: 4326435, id: 5, type: 'changeArea', is_mr: false, area: 'C'},
 			{session_id: 4326435, id: 1, type: 'priceItinerary', is_mr: false, area: 'C'},
 		],
-	});
-
-	return testCases;
+	};
 };
 
 const test_makeSelectQuery = ({input, output}) => {
