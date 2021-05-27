@@ -1,5 +1,5 @@
 const Xml = require('../../src/Utils/Xml.js');
-const TestCase = require('../../src/Transpiled/Lib/TestCase.js');
+const {assertSubTree} = require("../../src/Utils/Testing.js");
 
 const provide_call = () => {
 	const testCases = [];
@@ -43,20 +43,18 @@ const provide_call = () => {
 		output: "<PNRBFManagement_51 ><PNRBFRetrieveMods ><CustNameInfo ><NameType > </NameType><CustName >K<b>LE</b>S</CustName></CustNameInfo></PNRBFRetrieveMods></PNRBFManagement_51>",
 	});
 
-	return testCases.map(tc => [tc]);
+	return testCases.map(tc => tc);
 };
 
-class XmlTest extends TestCase {
-	test_call({input, output}) {
-		const actual = input.toString();
-		this.assertEquals(output, actual);
-	}
+const test_call = ({input, output}) => {
+	const actual = input.toString();
+	assertSubTree(output, actual);
+};
 
-	getTestMapping() {
-		return [
-			[provide_call, this.test_call],
-		];
-	}
+const XmlTest = {
+	testMapping: [
+		[provide_call, test_call],
+	],
 }
 
 module.exports = XmlTest;
