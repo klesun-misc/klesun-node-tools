@@ -3,7 +3,13 @@ const {escapeRegex} = require('./Misc.js');
 
 const escCol = col => col
 	.split('.')
-	.map(p => '`' + p + '`')
+	.map(p => {
+		if (p.includes('`')) {
+			// too lazy to write proper escaping
+			throw new Error('Backticks in column names are not supported');
+		}
+		return '`' + p + '`';
+	})
 	.join('.');
 
 const makeCond = (tuple, level = 0) => {
@@ -12,11 +18,10 @@ const makeCond = (tuple, level = 0) => {
 		const msg = 'Circular references in SQL condition tree';
 		throw new Error(msg);
 	}
-	if (tuple.length === 1) {
-		// custom SQL condition, no placeholder
+	if (!Array.isArray(tuple) && tuple.sql) {
 		return {
-			sql: '(' + tuple[0] + ')',
-			placedValues: [],
+			sql: '(' + tuple.sql + ')',
+			placedValues: tuple.placedValues || [],
 			needsParentheses: false,
 		};
 	} else if (tuple.length === 2) {
@@ -37,7 +42,7 @@ const makeCond = (tuple, level = 0) => {
 				needsParentheses: true,
 			};
 		}
-	} else {
+	} else if (tuple.length === 3) {
 		// plain condition
 		const [col, operator, value] = tuple;
 		const escapedCol = escCol(col);
@@ -65,34 +70,16 @@ const makeCond = (tuple, level = 0) => {
 			sql, placedValues,
 			needsParentheses: textAnds.length > 1,
 		};
+	} else {
+		throw new Error('Unexpected condition tuple length: ' + tuple.length);
 	}
-};
-
-const makeConds = (dataAnds) => {
-	return makeCond(['AND', dataAnds]);
 };
 
 const normalizeSelectParams = (params) => {
 	let {
-		table, as, fields = [], join = [], where = [], whereOr = [],
+		table, as, fields = [], join = [], where = null,
 		orderBy = [], groupBy = [], limit = null, skip = null,
 	} = params;
-
-	if (whereOr.length > 0 && whereOr[0].length > 0) {
-		// whereTree - I think the easiest way is to think about
-		// it as AND being Array.every() and OR being Array.some()
-		where = [...where,
-			['OR', whereOr.map(ands => ['AND', ands])],
-		];
-	}
-
-	// legacy
-	if (typeof orderBy === 'string') {
-		orderBy = orderBy
-			.split(',')
-			.map(p => p.match(/^(.+?)(\s+ASC|\s+DESC|)\s*$/))
-			.map(([, expr, direction]) => [expr, direction.trim()]);
-	}
 
 	return {
 		table, as, fields, join, where,
@@ -127,8 +114,8 @@ exports.makeSelectQuery = (params) => {
 					l + ' ' + op + ' ' + r))
 			.join('\n'),
 	];
-	if (where.length > 0) {
-		let {sql, placedValues} = makeConds(where);
+	if (where) {
+		let {sql, placedValues} = makeCond(where);
 		if (sql) {
 			allPlacedValues.push(...placedValues);
 			sqlParts.push('WHERE ' + sql);
@@ -197,7 +184,7 @@ exports.makeInsertQuery = ({table, rows, insertType = 'insertOrUpdate', syntax =
 
 exports.makeUpdateQuery = ({table, set, where}) => {
 	let makeConds = ands => ands.map(([col, operator]) =>
-		'`' + col + '` ' + operator + ' ?').join(' AND ');
+		escCol(col) + ' ' + operator + ' ?').join(' AND ');
 	let sql = [
 		`UPDATE ${table}`,
 		`SET ` + Object.keys(set)
@@ -219,7 +206,7 @@ exports.makeDeleteQuery = (params) => {
 	const {table, where = []} = normalizeSelectParams(params);
 	const sqlParts = [`DELETE FROM ${table}`];
 	const allPlacedValues = [];
-	const {sql, placedValues} = makeConds(where);
+	const {sql, placedValues} = makeCond(where);
 	if (sql) {
 		allPlacedValues.push(...placedValues);
 		sqlParts.push('WHERE ' + sql);
@@ -249,7 +236,9 @@ const matchesCondition = (row, condTuple, level = 0) => {
 		const msg = 'Circular references in SQL condition tree';
 		throw new Error(msg);
 	}
-	if (condTuple.length === 1) {
+	if (typeof condTuple === 'string') {
+		throw new Error('Raw WHERE conditions not supported in array emulation: ' + condTuple);
+	} else if (condTuple.length === 1) {
 		const msg = 'Attempted to use custom SQL in array filtering';
 		throw new Error(msg, condTuple);
 	} else if (condTuple.length === 2) {
@@ -326,7 +315,7 @@ exports.selectFromArray = (params, allRows) => {
 
 	const occurrences = new Set();
 	return allRows
-		.filter(row => matchesCondition(row, ['AND', where]))
+		.filter(row => !where || matchesCondition(row, where))
 		.filter(row => {
 			if (groupBy.length > 0) {
 				const occurrence = JSON.stringify(groupBy.map(f => row[f]));

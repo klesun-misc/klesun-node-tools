@@ -5,8 +5,13 @@ const provide_makeSelectQuery = function*() {
 	yield {
 		"input": {
 			"table": "cmd_rq_log",
-			"where": [["agentId", "=", "2911"], ["requestId", "=", "0"]],
-			"orderBy": "id DESC",
+			"where": ['AND', [
+				["agentId", "=", "2911"],
+				["requestId", "=", "0"],
+			]],
+			orderBy: [
+				['id', 'DESC'],
+			],
 			"limit": 100
 		},
 		"output": {
@@ -24,9 +29,7 @@ const provide_makeSelectQuery = function*() {
 	yield {
 		"input": {
 			"table": "migrations",
-			"where": [
-				["name", "=", "GRECT/2019.04.17005-create-mentioned-pnrs-table"]
-			]
+			"where": ["name", "=", "GRECT/2019.04.17005-create-mentioned-pnrs-table"]
 		},
 		"output": {
 			"sql": "SELECT * FROM migrations\n\nWHERE `name` = ?",
@@ -39,8 +42,9 @@ const provide_makeSelectQuery = function*() {
 			"table": "terminal_sessions",
 			"as": "ts",
 			"join": [],
-			"where": [],
-			"orderBy": "ts.id DESC",
+			orderBy: [
+				['ts.id', 'DESC'],
+			],
 			"limit": 2000
 		},
 		"output": {
@@ -65,14 +69,16 @@ const provide_makeSelectQuery = function*() {
 					"on": [["mp.sessionId", "=", "ts.id"]]
 				}
 			],
-			"where": [
+			"where": ["AND", [
 				["ts.agent_id", "=", "6206"],
 				["ts.gds", "=", "sabre"],
 				["ts.id", "=", "15102"],
 				["ts.lead_id", "=", "18544584"],
 				["mp.recordLocator", "=", "TXH2HK"]
+			]],
+			orderBy: [
+				['ts.id', 'DESC'],
 			],
-			"orderBy": "ts.id DESC",
 			"limit": 2000
 		},
 		"output": {
@@ -90,8 +96,10 @@ const provide_makeSelectQuery = function*() {
 	yield {
 		"input": {
 			"table": "terminal_command_log",
-			"where": [["session_id", "=", 773]],
-			"orderBy": "id DESC"
+			"where": ["session_id", "=", 773],
+			orderBy: [
+				['id', 'DESC'],
+			],
 		},
 		"output": {
 			"sql": [
@@ -108,12 +116,14 @@ const provide_makeSelectQuery = function*() {
 		"title": "example with custom SQL condition in where",
 		"input": {
 			"table": "terminal_command_log",
-			"where": [
+			"where": ["AND", [
 				["session_id", "=", 773],
-				["MAX(id) > 13"],
+				{sql: "MAX(id) > 13", placedValues: []},
 				["dt", "<", "2019-05-17"],
+			]],
+			orderBy: [
+				['id', 'DESC'],
 			],
-			"orderBy": "id DESC"
 		},
 		"output": {
 			"sql": [
@@ -130,15 +140,17 @@ const provide_makeSelectQuery = function*() {
 		title: 'example with IN (...)',
 		input: {
 			table: 'terminal_command_log',
-			whereOr: [
-				[['type', 'IN', ['redisplayPnr', 'itinerary', 'storedPricing']]],
-				[['is_mr', '=', true]],
-			],
-			where: [
+			where: ["AND", [
 				['area', '=', 'C'],
 				['session_id', '=', 4326435],
+				["OR", [
+					['type', 'IN', ['redisplayPnr', 'itinerary', 'storedPricing']],
+					['is_mr', '=', true],
+				]],
+			]],
+			orderBy: [
+				['id', 'DESC'],
 			],
-			orderBy: 'id DESC',
 		},
 		output: {
 			sql: [
@@ -155,14 +167,14 @@ const provide_makeSelectQuery = function*() {
 		title: 'whereTree example',
 		input: {
 			table: 'terminal_command_log',
-			where: [
+			where: ['AND', [
 				['area', '=', 'B'],
 				['is_mr', '=', false],
 				['OR', [
 					['type', 'IS', null],
 					['type', 'NOT IN', ['moveRest', 'openPnr']],
 				]],
-			],
+			]],
 		},
 		output: {
 			sql: [
@@ -174,15 +186,15 @@ const provide_makeSelectQuery = function*() {
 		},
 	};
 
-	const where = [
+	const where = ['AND', [
 		['area', '=', 'B'],
 		['is_mr', '=', false],
 		['OR', [
 			['type', 'IS', null],
 			['type', 'NOT IN', ['moveRest', 'openPnr']],
 		]],
-	];
-	where[2][1].push(['AND', where]);
+	]];
+	where[1][2][1].push(where);
 
 	yield {
 		title: 'whereTree circular references',
@@ -209,13 +221,22 @@ const provide_makeSelectQuery = function*() {
 				{type: 'left', table: 'rulesItineraryAirlines', as: 'rulesItineraryAirlines', on: [['rulesItineraryAirlines.ruleId', '=', 'rules.id']]},
 				{type: 'left', table: 'rulesFareTypes', as: 'rulesFareTypes', on: [['rulesFareTypes.ruleId', '=', 'rules.id']]},
 			],
-			where: [
-				["`applyRulesTo` = 'both' OR `applyRulesTo` = 'agents' OR `applyRulesTo` IS NULL OR `applyRulesTo` = ''"],
-			],
-			whereOr: [
-				[['linkType', '=', 'token'], ['token', '=', 'qwerty123']],
-				[['linkType', '=', 'parentId'], ['parentId', '=', 12345]],
-			],
+			where: ['AND', [
+				{
+					sql: "`applyRulesTo` = ? OR `applyRulesTo` = ? OR `applyRulesTo` IS NULL OR `applyRulesTo` = ''",
+					placedValues: ['both', 'agents'],
+				},
+				['OR', [
+					['AND', [
+						['linkType', '=', 'token'],
+						['token', '=', 'qwerty123'],
+					]],
+					['AND', [
+						['linkType', '=', 'parentId'],
+						['parentId', '=', 12345]
+					]],
+				]],
+			]],
 		},
 		output: {
 			sql: [
@@ -227,10 +248,10 @@ const provide_makeSelectQuery = function*() {
 				" left JOIN rulesAirlines AS rulesAirlines ON rulesAirlines.ruleId = rules.id",
 				" left JOIN rulesItineraryAirlines AS rulesItineraryAirlines ON rulesItineraryAirlines.ruleId = rules.id",
 				" left JOIN rulesFareTypes AS rulesFareTypes ON rulesFareTypes.ruleId = rules.id",
-				"WHERE (`applyRulesTo` = 'both' OR `applyRulesTo` = 'agents' OR `applyRulesTo` IS NULL OR `applyRulesTo` = '') "
+				"WHERE (`applyRulesTo` = ? OR `applyRulesTo` = ? OR `applyRulesTo` IS NULL OR `applyRulesTo` = '') "
 				+ "AND ((`linkType` = ? AND `token` = ?) OR (`linkType` = ? AND `parentId` = ?))",
 			].join("\n"),
-			placedValues: ['token', 'qwerty123', 'parentId', 12345]
+			placedValues: ['both', 'agents', 'token', 'qwerty123', 'parentId', 12345]
 		}
 	};
 
@@ -238,16 +259,16 @@ const provide_makeSelectQuery = function*() {
 		title: 'GROUP BY example',
 		"input": {
 			table: 'Locations',
-			whereOr: [
-				[
+			where: ['OR', [
+				['AND', [
 					['type', '=', 'country'],
 					['value', '=', 'US'],
-				],
-				[
+				]],
+				['AND', [
 					['type', '=', 'city'],
 					['value', '=', 'MOW'],
-				],
-			],
+				]],
+			]],
 			groupBy: ['type', 'value'],
 		},
 		"output": {
@@ -266,7 +287,7 @@ const provide_makeDeleteQuery = function*() {
 	yield {
 		"input": {
 			"table": "cmd_rs_log",
-			"where": [["responseTimestamp", "<", 235847561]],
+			"where": ["responseTimestamp", "<", 235847561],
 		},
 		"output": {
 			"sql": [
@@ -281,7 +302,7 @@ const provide_makeDeleteQuery = function*() {
 		title: 'boolean tree example',
 		"input": {
 			table: 'Locations',
-			where: [['OR', [
+			where: ['OR', [
 				['AND', [
 					['type', '=', 'country'],
 					['value', '=', 'US'],
@@ -290,7 +311,7 @@ const provide_makeDeleteQuery = function*() {
 					['type', '=', 'city'],
 					['value', '=', 'MOW'],
 				]],
-			]]],
+			]],
 		},
 		"output": {
 			"sql": [
@@ -305,16 +326,16 @@ const provide_makeDeleteQuery = function*() {
 		title: 'boolean tree example',
 		"input": {
 			table: 'Locations',
-			whereOr: [
-				[
+			where: ['OR', [
+				['AND', [
 					['type', '=', 'country'],
 					['value', '=', 'US'],
-				],
-				[
+				]],
+				['AND', [
 					['type', '=', 'city'],
 					['value', '=', 'MOW'],
-				],
-			],
+				]],
+			]],
 		},
 		"output": {
 			"sql": [
@@ -395,10 +416,10 @@ const provide_selectFromArray = function*() {
 		title: 'basic example',
 		input: {
 			params: {
-				where: [
+				where: ['AND', [
 					['amount', '>', '250.00'],
 					['amount', '<=', '500.00'],
-				],
+				]],
 				orderBy: [
 					['id', 'DESC'],
 				],
@@ -421,10 +442,10 @@ const provide_selectFromArray = function*() {
 		title: 'terminal_command_log last availability command example',
 		input: {
 			params: {
-				where: [
+				where: ['AND', [
 					['area', '=', 'B'],
 					['type', '=', 'airAvailability'],
-				],
+				]],
 				orderBy: [
 					['id', 'DESC'],
 				],
@@ -452,15 +473,17 @@ const provide_selectFromArray = function*() {
 		input: {
 			params: {
 				table: 'terminal_command_log',
-				whereOr: [
-					[['type', 'IN', ['redisplayPnr', 'itinerary', 'storedPricing']]],
-					[['is_mr', '=', true]],
-				],
-				where: [
+				where: ['AND', [
 					['area', '=', 'C'],
 					['session_id', '=', 4326435],
+					['OR', [
+						['type', 'IN', ['redisplayPnr', 'itinerary', 'storedPricing']],
+						['is_mr', '=', true],
+					]],
+				]],
+				orderBy: [
+					['id', 'DESC'],
 				],
-				orderBy: 'id DESC',
 			},
 			allRows: [
 				{session_id: 4326435, id: 1, type: 'priceItinerary', is_mr: false, area: 'C'},
@@ -487,11 +510,11 @@ const provide_selectFromArray = function*() {
 		input: {
 			params: {
 				table: 'terminal_command_log',
-				where: [
-					['type', 'IN', ['priceItinerary', 'redisplayPnr', 'changeArea', 'itinerary']],
-				],
+				where: ['type', 'IN', ['priceItinerary', 'redisplayPnr', 'changeArea', 'itinerary']],
 				groupBy: ['type'],
-				orderBy: 'id DESC',
+				orderBy: [
+					['id', 'DESC'],
+				],
 			},
 			allRows: [
 				{session_id: 4326435, id: 1, type: 'priceItinerary', is_mr: false, area: 'C'},

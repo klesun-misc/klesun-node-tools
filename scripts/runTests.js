@@ -5,7 +5,7 @@ const SqlUtilTest = require("../tests/Utils/SqlUtilTest.js");
 const XmlTest = require("../tests/Utils/XmlTest.js");
 const {runTestSuites} = require("../src/Utils/Testing.js");
 
-Reset = "\x1b[0m";
+const Reset = "\x1b[0m";
 const FgRed = "\x1b[31m";
 const FgGreen = "\x1b[32m";
 
@@ -30,7 +30,8 @@ const main = async () => {
     }
   }
   process.stdout.write('\n');
-  console.log('Successful tests: ' + successCount + '; Failed tests: ' + errorCount);
+  console.log('Successful tests: ' + successCount);
+  console.log((errorCount > 0 ? FgRed : '') + 'Failed tests: ' + errorCount + Reset);
 };
 
 main().catch(error => {

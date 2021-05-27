@@ -41,7 +41,15 @@ const assertSubTree = (expectedSubTree, actualTree, message = '') => {
     }
   } else {
     if (expectedSubTree !== actualTree) {
-      throw new ExpectationFailed(message + ' expected (+) != actual (-)\n+ ' + expectedSubTree + '\n- ' + actualTree);
+      if (typeof expectedSubTree === 'string' && typeof actualTree === 'string') {
+        throw new ExpectationFailed(
+            message + ' expected (+) != actual (-)\n' +
+            expectedSubTree.split('\n').map(l => '+ ' + l).join('\n') + '\n' +
+            actualTree.split('\n').map(l => '- ' + l).join('\n')
+        );
+      } else {
+        throw new ExpectationFailed(message + ' expected ' + expectedSubTree + ', got ' + actualTree);
+      }
     }
   }
 };
@@ -64,28 +72,29 @@ const runTestSuites = async function*(testSuites) {
     yield {kind: 'LOG', message: 'Processing test suite: ' + suiteName};
     for (let i = 0; i < testSuite.testMapping.length; ++i) {
       const [provider, test] = testSuite.testMapping[i];
-      const testName = test.name || '#' + i;
-      yield {kind: 'LOG', message: '  Processing test ' + testName};
+      const testTitle = test.name || '#' + i;
+      yield {kind: 'LOG', message: '  Processing test - ' + testTitle};
       let testCases;
       try {
         testCases = await provider();
       } catch (error) {
         yield {
           kind: 'PROVIDER_FAILURE',
-          suiteName, testName, error,
+          suiteName, testTitle, error,
         };
         continue;
       }
       let j = 0;
       for (const testCase of testCases) {
-        yield {kind: 'LOG', message: '    Processing test case #' + j};
+        const testCaseTitle = testCase?.title || '#' + j;
+        yield {kind: 'LOG', message: '    Processing test case - ' + testCaseTitle};
         try {
           await test(testCase);
           yield {kind: 'SUCCESS'};
         } catch (error) {
           yield {
             kind: 'TEST_FAILURE',
-            suiteName, testName, testCaseNumber: j, error,
+            suiteName, testCaseTitle, testCaseNumber: j, error,
           };
         }
         ++j;
