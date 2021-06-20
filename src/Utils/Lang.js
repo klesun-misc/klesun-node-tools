@@ -46,7 +46,7 @@ exports.timeout = (seconds, promise) => {
 		promise,
 		new Promise((_, reject) => setTimeout(() => {
 			let msg = 'Timed out after ' + seconds + ' s.';
-			return reject(Rej.RequestTimeout.makeExc(msg));
+			return reject(new Error(msg));
 		}, seconds * 1000)),
 	]);
 };
