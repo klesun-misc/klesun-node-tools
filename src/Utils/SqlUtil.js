@@ -203,11 +203,11 @@ exports.makeUpdateQuery = ({table, set, where}) => {
 };
 
 exports.makeDeleteQuery = (params) => {
-	const {table, where = []} = normalizeSelectParams(params);
+	const {table, where = null} = normalizeSelectParams(params);
 	const sqlParts = [`DELETE FROM ${table}`];
 	const allPlacedValues = [];
-	const {sql, placedValues} = makeCond(where);
-	if (sql) {
+	if (where) {
+		const {sql, placedValues} = makeCond(where);
 		allPlacedValues.push(...placedValues);
 		sqlParts.push('WHERE ' + sql);
 	}
